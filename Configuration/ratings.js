@@ -24,144 +24,136 @@
     // -----------------------------------------------------------------
     const style = document.createElement('style');
     style.textContent = `
-        .jr-wrapper {
-            position: relative;
-            display: inline-flex;
-            padding-bottom: 24px;
+        :root {
+            --jf-text: #ffffff;
+            --jf-hover-bg: rgba(255, 255, 255, 0.18);
+            --jf-popover-bg: rgba(28, 28, 28, 0.9);
+            --jf-blur: blur(20px);
+            --bezier: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .jr-trigger {
-            width: 42px;
-            height: 42px;
+        .rating-wrapper {
+            position: relative;
+            padding: 10px;
+        }
+
+        .main-btn {
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            background: rgba(0, 0, 0, 0.4);
+            border: none;
+            background: transparent;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: all 0.25s ease;
-            padding: 0;
+            transition: background-color 0.2s ease;
+            outline: none;
+            position: relative;
+            z-index: 5;
         }
 
-        .jr-trigger:hover {
-            border-color: #fff;
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.08);
+        .main-btn:hover { background-color: var(--jf-hover-bg); }
+
+        .main-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--jf-text);
         }
 
-        .jr-trigger svg {
-            width: 22px;
-            height: 22px;
-            fill: #fff;
-            transition: transform 0.2s ease;
-        }
+        .main-btn.is-dislike svg { transform: rotate(180deg); }
+        .main-btn.is-love svg { width: 34px; }
 
-        /* Trigger : affiche le pouce retourné si dislike enregistré */
-        .jr-trigger.is-dislike svg { transform: rotate(180deg); }
-
-        /* Trigger : double pouce si love enregistré */
-        .jr-trigger.is-love svg  { width: 32px; }
-
-        /* Menu pill */
-        .jr-menu {
+        .rating-menu {
             position: absolute;
-            bottom: 68px;
+            bottom: 65px;
             left: 50%;
-            transform: translateX(-50%) translateY(12px);
-            background: #2f2f2f;
+            transform: translateX(-50%) translateY(15px) scale(0.9);
+            background-color: var(--jf-popover-bg);
+            backdrop-filter: var(--jf-blur);
+            -webkit-backdrop-filter: var(--jf-blur);
             border-radius: 40px;
-            padding: 8px 14px;
+            padding: 6px 12px;
             display: flex;
-            gap: 14px;
-            align-items: center;
+            gap: 8px;
             visibility: hidden;
             opacity: 0;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            transition: opacity 0.25s ease, transform 0.35s var(--bezier), visibility 0.25s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
             z-index: 1000;
-            white-space: nowrap;
         }
 
         /* Pont invisible pour maintenir le hover */
-        .jr-menu::after {
+        .rating-menu::after {
             content: '';
             position: absolute;
-            bottom: -28px;
-            left: 0;
-            width: 100%;
-            height: 36px;
+            bottom: -35px;
+            left: -20px;
+            right: -20px;
+            top: 0;
+            z-index: -1;
         }
 
-        .jr-wrapper:hover .jr-menu,
-        .jr-wrapper.is-open .jr-menu {
+        .rating-wrapper:hover .rating-menu,
+        .rating-wrapper.is-open .rating-menu {
             visibility: visible;
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transform: translateX(-50%) translateY(0) scale(1);
         }
 
-        /* Boutons d'options */
-        .jr-option {
+        .option-btn {
             position: relative;
-            cursor: pointer;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 32px;
-            height: 32px;
-            transition: transform 0.18s ease;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.2s var(--bezier);
         }
 
-        .jr-option:hover { transform: scale(1.35); }
+        .option-btn:hover {
+            background-color: var(--jf-hover-bg);
+            transform: scale(1.15);
+        }
 
-        .jr-option.is-selected { opacity: 1; }
-        .jr-option:not(.is-selected) { opacity: 0.6; }
-        /* Par défaut toutes à full opacity si aucune sélection */
-        .jr-menu:not(.has-selection) .jr-option { opacity: 1; }
-
-        .jr-option svg {
+        .option-btn svg {
             width: 24px;
             height: 24px;
-            fill: #fff;
+            fill: var(--jf-text);
         }
 
-        .jr-option.jr-love svg { width: 36px; }
-        .jr-option.jr-dislike svg { transform: rotate(180deg); }
+        .option-btn.is-selected { opacity: 1; }
+        .option-btn:not(.is-selected) { opacity: 0.6; }
+        .rating-menu:not(.has-selection) .option-btn { opacity: 1; }
+
+        .dislike svg { transform: rotate(180deg); }
+        .love svg { width: 34px; }
 
         /* Tooltip */
-        .jr-option::before {
+        .option-btn::before {
             content: attr(data-label);
             position: absolute;
-            bottom: 46px;
+            bottom: 55px;
             left: 50%;
-            transform: translateX(-50%);
-            background: #fff;
-            color: #000;
-            padding: 5px 10px;
+            transform: translateX(-50%) translateY(5px);
+            background: #ffffff;
+            color: #000000;
+            padding: 5px 12px;
             border-radius: 4px;
             font-size: 13px;
             font-weight: 600;
             white-space: nowrap;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.18s ease;
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            transition: opacity 0.2s ease, transform 0.2s ease;
         }
 
-        .jr-option::after {
-            content: '';
-            position: absolute;
-            bottom: 39px;
-            left: 50%;
-            transform: translateX(-50%);
-            border: 4px solid transparent;
-            border-top-color: #fff;
-            opacity: 0;
-            transition: opacity 0.18s ease;
+        .option-btn:hover::before {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
         }
-
-        .jr-option:hover::before,
-        .jr-option:hover::after { opacity: 1; }
     `;
     document.head.appendChild(style);
 
@@ -179,7 +171,7 @@
     function _svg_double_thumb() {
         return `
         <svg viewBox="0 0 32 24">
-            <path opacity="0.45" transform="translate(6,0)" d="${THUMB_PATH}"/>
+            <path opacity="0.4" transform="translate(6,0)" d="${THUMB_PATH}"/>
             <path d="${THUMB_PATH}"/>
         </svg>`;
     }
@@ -246,21 +238,21 @@
     // -----------------------------------------------------------------
     function _create_widget(itemId) {
         const wrapper = document.createElement('div');
-        wrapper.className = 'jr-wrapper';
+        wrapper.className = 'rating-wrapper';
         wrapper.id = 'jr-widget';
 
         wrapper.innerHTML = `
-            <button class="jr-trigger" id="jr-trigger">
+            <button class="main-btn" id="jr-trigger">
                 ${_svg_thumb_up()}
             </button>
-            <div class="jr-menu" id="jr-menu">
-                <div class="jr-option jr-dislike" data-rating="-1" data-label="Pas pour moi">
+            <div class="rating-menu" id="jr-menu">
+                <div class="option-btn dislike" data-rating="-1" data-label="Pas pour moi">
                     ${_svg_thumb_down()}
                 </div>
-                <div class="jr-option jr-like" data-rating="1" data-label="J'aime bien">
+                <div class="option-btn" data-rating="1" data-label="J'aime bien">
                     ${_svg_thumb_up()}
                 </div>
-                <div class="jr-option jr-love" data-rating="2" data-label="J'adore !">
+                <div class="option-btn love" data-rating="2" data-label="J'adore !">
                     ${_svg_double_thumb()}
                 </div>
             </div>
@@ -279,7 +271,7 @@
         menu.addEventListener('click', (e) => e.stopPropagation());
 
         // Clic sur une option
-        wrapper.querySelectorAll('.jr-option').forEach(btn => {
+        wrapper.querySelectorAll('.option-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const newRating = parseInt(btn.dataset.rating);
                 const currentlySelected = btn.classList.contains('is-selected');
@@ -304,8 +296,8 @@
 
     // Met à jour l'UI selon le vote actif
     function _apply_selection(wrapper, rating) {
-        const trigger = wrapper.querySelector('.jr-trigger');
-        const menu    = wrapper.querySelector('.jr-menu');
+        const trigger = wrapper.querySelector('.main-btn');
+        const menu    = wrapper.querySelector('.rating-menu');
 
         // Reset trigger
         trigger.classList.remove('is-dislike', 'is-like', 'is-love');
@@ -313,14 +305,14 @@
 
         // Reset options
         menu.classList.remove('has-selection');
-        wrapper.querySelectorAll('.jr-option').forEach(btn => btn.classList.remove('is-selected'));
+        wrapper.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('is-selected'));
 
         if (rating === null) return;
 
         menu.classList.add('has-selection');
 
         // Marque l'option sélectionnée
-        const selected = wrapper.querySelector(`.jr-option[data-rating="${rating}"]`);
+        const selected = wrapper.querySelector(`.option-btn[data-rating="${rating}"]`);
         if (selected) selected.classList.add('is-selected');
 
         // Classe CSS sur le trigger pour orienter l'icône
@@ -356,13 +348,10 @@
         if (existing && _current_item_id === itemId) return;
         if (existing) existing.remove();
 
-        // Trouve le conteneur de la page détail
-        const container =
-            document.querySelector('.detailPagePrimaryContent .detailSection') ||
-            document.querySelector('.detailPagePrimaryContent') ||
-            document.querySelector('.detailSection');
+        // Cible le bouton bande-annonce pour le remplacer
+        const trailerBtn = document.querySelector('.btnPlayTrailer');
 
-        if (!container) {
+        if (!trailerBtn) {
             if (_injection_tries < MAX_TRIES) {
                 _injection_tries++;
                 setTimeout(_inject_widget, 200);
@@ -374,21 +363,10 @@
         _current_item_id = itemId;
         _injection_tries = 0;
 
-        // Cherche la zone des boutons d'action (Lecture, Bande-annonce, ...)
-        const actionButtons =
-            container.querySelector('.detailButtons') ||
-            container.querySelector('.itemDetailButtons') ||
-            container.querySelector('[class*="actionButtons"]') ||
-            container.querySelector('[class*="detailButton"]');
-
+        // Cache le bouton bande-annonce et insère le widget à sa place
+        trailerBtn.style.display = 'none';
         const widget = _create_widget(itemId);
-
-        if (actionButtons) {
-            actionButtons.appendChild(widget);
-        } else {
-            // Fallback : bas du conteneur principal
-            container.appendChild(widget);
-        }
+        trailerBtn.parentElement.insertBefore(widget, trailerBtn);
 
         // Charge le vote existant et l'affiche
         const data = await _load_my_rating(itemId);

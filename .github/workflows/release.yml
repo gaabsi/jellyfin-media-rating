@@ -53,7 +53,7 @@ jobs:
 
           # Crée le ZIP avec DLL + meta.json
           ZIP="media-rating_${VERSION}.zip"
-          zip $ZIP $DLL meta.json
+          zip -j $ZIP $DLL meta.json
           echo "zip=$ZIP" >> $GITHUB_OUTPUT
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT

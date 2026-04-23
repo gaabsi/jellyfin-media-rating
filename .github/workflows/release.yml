@@ -23,28 +23,56 @@ jobs:
       - name: Build
         run: dotnet build --configuration Release
 
-      - name: Compute checksum
-        id: checksum
+      - name: Prepare release assets
+        id: assets
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.0000000Z")
           DLL="bin/Release/net8.0/Jellyfin.Plugin.Rating.dll"
-          echo "md5=$(md5sum $DLL | awk '{print $1}')" >> $GITHUB_OUTPUT
-          echo "dll=$DLL" >> $GITHUB_OUTPUT
+          CHECKSUM=$(md5sum $DLL | awk '{print $1}')
+
+          # Génère le meta.json avec le bon nom d'assemblée
+          cat > meta.json << EOF
+          {
+            "category": "General",
+            "changelog": "Release ${GITHUB_REF_NAME}",
+            "description": "Netflix-like rating UI for Jellyfin. Rate your media with a simple thumbs system.",
+            "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "name": "Media Rating",
+            "overview": "Rate movies and shows with 3 levels : dislike, like, love — directly from the detail page.",
+            "owner": "gaabsi",
+            "targetAbi": "10.11.0.0",
+            "timestamp": "${TIMESTAMP}",
+            "version": "${VERSION}",
+            "status": "Active",
+            "autoUpdate": false,
+            "imagePath": "",
+            "assemblies": ["Jellyfin.Plugin.Rating.dll"]
+          }
+          EOF
+
+          # Crée le ZIP avec DLL + meta.json
+          ZIP="media-rating_${VERSION}.zip"
+          zip $ZIP $DLL meta.json
+          echo "zip=$ZIP" >> $GITHUB_OUTPUT
+          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        id: release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ steps.checksum.outputs.dll }}
+          files: ${{ steps.assets.outputs.zip }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update manifest.json
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DLL_URL="${{ steps.release.outputs.url }}"
-          SOURCE_URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/Jellyfin.Plugin.Rating.dll"
-          CHECKSUM="${{ steps.checksum.outputs.md5 }}"
+          VERSION="${{ steps.assets.outputs.version }}"
+          TIMESTAMP="${{ steps.assets.outputs.timestamp }}"
+          ZIP="${{ steps.assets.outputs.zip }}"
+          SOURCE_URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/${ZIP}"
+          CHECKSUM="${{ steps.assets.outputs.checksum }}"
 
           python3 - <<EOF
           import json
@@ -61,7 +89,6 @@ jobs:
               "timestamp": "${TIMESTAMP}"
           }
 
-          # Insère en tête de liste (version la plus récente en premier)
           manifest[0]["versions"].insert(0, new_version)
 
           with open("manifest.json", "w") as f:

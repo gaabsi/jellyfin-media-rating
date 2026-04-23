@@ -61,12 +61,6 @@
             fill: var(--jf-text);
         }
 
-        .main-btn.is-dislike svg { transform: rotate(180deg); }
-        .main-btn.is-love svg { width: 34px; }
-
-        .main-btn.is-like svg path,
-        .main-btn.is-dislike svg path,
-        .main-btn.is-love svg path { fill-rule: evenodd; }
 
         .rating-menu {
             position: absolute;
@@ -168,6 +162,10 @@
         return `<svg viewBox="0 0 24 24"><path d="${THUMB_PATH}"/></svg>`;
     }
 
+    function _svg_thumb_filled() {
+        return `<svg viewBox="0 0 24 24"><path d="M11.838 2C13.543 2 15.14 3.097 15.626 4.852C15.851 5.806 16.072 6.989 16.072 8C16.072 8.34 16.047 8.675 16.006 9H17.5A3.5 3.5 0 0 1 21 12.5C21 12.595 21 12.69 20.995 12.784Q20.82 13.072 20.495 13.188A3.5 3.5 0 0 1 21 14.512C21 15.174 20.815 15.795 20.495 16.324A3.5 3.5 0 0 1 19.467 18.995A3.5 3.5 0 0 1 16.5 22H13.021A11 11 0 0 1 9.542 21.436L8.049 20.938A8.6 8.6 0 0 1 5.351 20.5C4.272 20.5 3.4 19.625 3.4 18.547V13.754A2 2 0 0 1 4.416 11.968L6.451 11.387A1 1 0 0 0 7.025 10.955L8.965 7.85V3.5A1.5 1.5 0 0 1 10.465 2z"/></svg>`;
+    }
+
     function _svg_thumb_down() {
         return `<svg viewBox="0 0 24 24"><path d="${THUMB_PATH}"/></svg>`;
     }
@@ -180,11 +178,9 @@
         </svg>`;
     }
 
-    // SVG affiché dans le trigger selon le vote enregistré
-    function _trigger_svg(rating) {
-        if (rating === RATING.LOVE)    return _svg_double_thumb();
-        if (rating === RATING.DISLIKE) return _svg_thumb_up();   // sera retourné via CSS
-        return _svg_thumb_up();                                   // like ou neutre
+    // SVG affiché dans le trigger — toujours le même pouce, peu importe le vote
+    function _trigger_svg() {
+        return _svg_thumb_up();
     }
 
     // -----------------------------------------------------------------
@@ -310,8 +306,8 @@
         const menu    = wrapper.querySelector('.rating-menu');
 
         // Reset trigger
-        trigger.classList.remove('is-dislike', 'is-like', 'is-love');
-        trigger.innerHTML = _trigger_svg(rating);
+        trigger.classList.remove('is-rated');
+        trigger.innerHTML = _trigger_svg();
 
         // Reset options
         menu.classList.remove('has-selection');
@@ -319,16 +315,14 @@
 
         if (rating === null) return;
 
+        // Pouce plein quand un vote est actif
+        trigger.innerHTML = _svg_thumb_filled();
+
         menu.classList.add('has-selection');
 
         // Marque l'option sélectionnée
         const selected = wrapper.querySelector(`.option-btn[data-rating="${rating}"]`);
         if (selected) selected.classList.add('is-selected');
-
-        // Classe CSS sur le trigger pour orienter l'icône
-        if (rating === RATING.DISLIKE) trigger.classList.add('is-dislike');
-        if (rating === RATING.LIKE)    trigger.classList.add('is-like');
-        if (rating === RATING.LOVE)    trigger.classList.add('is-love');
     }
 
     // -----------------------------------------------------------------

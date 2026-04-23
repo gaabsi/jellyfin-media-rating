@@ -29,7 +29,6 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.0000000Z")
           DLL="bin/Release/net8.0/Jellyfin.Plugin.Rating.dll"
-          CHECKSUM=$(md5sum $DLL | awk '{print $1}')
 
           # Génère le meta.json avec le bon nom d'assemblée
           cat > meta.json << EOF
@@ -54,6 +53,7 @@ jobs:
           # Crée le ZIP avec DLL + meta.json
           ZIP="media-rating_${VERSION}.zip"
           zip -j $ZIP $DLL meta.json
+          CHECKSUM=$(md5sum $ZIP | awk '{print $1}')
           echo "zip=$ZIP" >> $GITHUB_OUTPUT
           echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
           echo "version=$VERSION" >> $GITHUB_OUTPUT

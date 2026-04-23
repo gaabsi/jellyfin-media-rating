@@ -1,0 +1,11 @@
+[
+  {
+    "guid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Media Rating",
+    "description": "Netflix-like rating UI for Jellyfin. Rate your media with a simple thumbs system.",
+    "overview": "Rate movies and shows with 3 levels : dislike, like, love — directly from the detail page.",
+    "owner": "gaabsi",
+    "category": "General",
+    "versions": []
+  }
+]

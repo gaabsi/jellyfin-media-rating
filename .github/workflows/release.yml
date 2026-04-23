@@ -1,0 +1,76 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build
+        run: dotnet build --configuration Release
+
+      - name: Compute checksum
+        id: checksum
+        run: |
+          DLL="bin/Release/net8.0/Jellyfin.Plugin.Rating.dll"
+          echo "md5=$(md5sum $DLL | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "dll=$DLL" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        id: release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.checksum.outputs.dll }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update manifest.json
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          DLL_URL="${{ steps.release.outputs.url }}"
+          SOURCE_URL="https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/Jellyfin.Plugin.Rating.dll"
+          CHECKSUM="${{ steps.checksum.outputs.md5 }}"
+
+          python3 - <<EOF
+          import json
+
+          with open("manifest.json") as f:
+              manifest = json.load(f)
+
+          new_version = {
+              "version": "${VERSION}",
+              "changelog": "Release ${GITHUB_REF_NAME}",
+              "targetAbi": "10.9.0.0",
+              "sourceUrl": "${SOURCE_URL}",
+              "checksum": "${CHECKSUM}",
+              "timestamp": "${TIMESTAMP}"
+          }
+
+          # Insère en tête de liste (version la plus récente en premier)
+          manifest[0]["versions"].insert(0, new_version)
+
+          with open("manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          EOF
+
+      - name: Commit manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "release: update manifest for ${GITHUB_REF_NAME}"
+          git push origin HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -21,14 +21,15 @@ namespace Jellyfin.Plugin.Rating.Api
             _repository = new RatingRepository(app_paths);
         }
 
-        // POST /api/MediaRating/Rate?itemId=...&userId=...&rating=-1|1|2&userName=...
+        // POST /api/MediaRating/Rate?itemId=...&userId=...&rating=-1|1|2&userName=...&itemName=...
         [HttpPost("Rate")]
         [Produces(MediaTypeNames.Application.Json)]
         public ActionResult rate_item(
             [FromQuery] Guid itemId,
             [FromQuery] Guid userId,
             [FromQuery] int rating,
-            [FromQuery] string? userName)
+            [FromQuery] string? userName,
+            [FromQuery] string? itemName)
         {
             if (!_valid_ratings.Contains(rating))
                 return BadRequest(new { success = false, message = "Rating must be -1, 1 or 2" });
@@ -38,6 +39,7 @@ namespace Jellyfin.Plugin.Rating.Api
                 ItemId    = itemId,
                 UserId    = userId,
                 UserName  = userName ?? "Unknown",
+                ItemName  = itemName ?? "Unknown",
                 Rating    = rating,
                 Timestamp = DateTime.UtcNow
             });

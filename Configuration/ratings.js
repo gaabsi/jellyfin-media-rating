@@ -64,6 +64,10 @@
         .main-btn.is-dislike svg { transform: rotate(180deg); }
         .main-btn.is-love svg { width: 34px; }
 
+        .main-btn.is-like svg path,
+        .main-btn.is-dislike svg path,
+        .main-btn.is-love svg path { fill-rule: evenodd; }
+
         .rating-menu {
             position: absolute;
             bottom: 65px;
@@ -201,11 +205,17 @@
 
     async function _save_rating(itemId, rating) {
         try {
-            const userId  = ApiClient.getCurrentUserId();
-            const user    = await ApiClient.getCurrentUser();
+            const userId   = ApiClient.getCurrentUserId();
+            const user     = await ApiClient.getCurrentUser();
             const userName = user?.Name ?? 'Unknown';
+            const itemRes  = await fetch(
+                ApiClient.getUrl(`Users/${userId}/Items/${itemId}`),
+                { headers: { 'X-Emby-Token': ApiClient.accessToken() } }
+            );
+            const itemData = await itemRes.json();
+            const itemName = itemData?.Name ?? 'Unknown';
             const url = ApiClient.getUrl(
-                `api/MediaRating/Rate?itemId=${itemId}&userId=${userId}&rating=${rating}&userName=${encodeURIComponent(userName)}`
+                `api/MediaRating/Rate?itemId=${itemId}&userId=${userId}&rating=${rating}&userName=${encodeURIComponent(userName)}&itemName=${encodeURIComponent(itemName)}`
             );
             const res = await fetch(url, {
                 method: 'POST',

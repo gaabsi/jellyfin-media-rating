@@ -1,15 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head><title>Media Rating</title></head>
-<body>
-<div data-role="page" class="page" id="MediaRatingConfigPage">
+<div id="MediaRatingConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button">
     <div data-role="content">
         <div class="content-primary">
-            <h2>Media Rating</h2>
-            <p>Netflix-like rating plugin — dislike / like / love.</p>
-            <p>Les votes sont stockés dans <code>PluginConfigurations/MediaRating/ratings.json</code>.</p>
+            <div class="verticalSection verticalSection-extrabottompadding">
+                <div class="sectionTitleContainer flex align-items-center">
+                    <h2 class="sectionTitle">Media Rating</h2>
+                </div>
+                <p>Plugin de notation style Netflix — dislike / like / love.</p>
+                <p>Les votes sont stockés de manière sécurisée dans la configuration du plugin.</p>
+            </div>
+
+            <div class="verticalSection">
+                <h2 class="sectionTitle">Informations</h2>
+                <div class="card binaryCard">
+                    <div class="cardBox">
+                        <div class="cardContent" style="padding:1em;">
+                            <p>L'onglet <b>"Mes votes"</b> est automatiquement ajouté à votre page d'accueil Jellyfin.</p>
+                            <p>Le widget de vote remplace le bouton "Bande-annonce" sur la page de détails des médias.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-</body>
-</html>

@@ -1,424 +1,211 @@
 (function () {
     'use strict';
 
-    // -----------------------------------------------------------------
-    // Valeurs de rating
-    // -----------------------------------------------------------------
+    // --- CONFIGURATION ---
+    const CONFIG = {
+        STWIDTH: '1.5', // L'épaisseur parfaite de 1.5px
+        COLORS: {
+            RED: '#ff3b30',
+            ORANGE: '#ff9500',
+            GREEN: '#34c759'
+        },
+        SELECTORS: {
+            TRAILER_BTN: '.btnPlayTrailer',
+            TABS_SLIDER: '.emby-tabs-slider',
+            TAB_CONTAINER: '.tab-panel-container',
+            PAGE_CONTAINER: '.pageContainer'
+        }
+    };
+
     const RATING = { DISLIKE: -1, LIKE: 1, LOVE: 2 };
+    
+    // Ton icône originale (contour silhouette)
+    const THUMB_PATH = `M10.5 2A1.5 1.5 0 0 0 9 3.5v4.213l-1.94 3.105a1 1 0 0 1-.574.432l-2.035.581 A2 2 0 0 0 3 13.754v4.793c0 1.078.874 1.953 1.953 1.953.917 0 1.828.148 2.698.438 l1.493.498a11 11 0 0 0 3.479.564H16.5a3.5 3.5 0 0 0 3.467-3.017 3.5 3.5 0 0 0 1.028-2.671c.32-.529.505-1.15.505-1.812s-.185-1.283-.505-1.812Q21 12.595 21 12.5 A3.5 3.5 0 0 0 17.5 9h-1.566c.041-.325.066-.66.066-1 0-1.011-.221-2.194-.446-3.148 C15.14 3.097 13.543 2 11.838 2z`;
+    const BACK_PATH = `M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z`;
 
-    // Path SVG Netflix (pouce)
-    const THUMB_PATH = `M10.696 8.773A2 2 0 0 0 11 7.713V4h.838c.877 0 1.59.553 1.77 1.311
-        C13.822 6.228 14 7.227 14 8a7 7 0 0 1-.246 1.75L13.432 11H17.5a1.5 1.5 0 0 1 1.476
-        1.77l-.08.445.28.354c.203.256.324.578.324.931s-.12.675-.324.93l-.28.355.08.445q.024.13.024.27
-        c0 .49-.234.925-.6 1.2l-.4.3v.5a1.5 1.5 0 0 1-1.5 1.5h-3.877a9 9 0 0 1-2.846-.462l-1.493-.497
-        A10.5 10.5 0 0 0 5 18.5v-4.747l2.036-.581a3 3 0 0 0 1.72-1.295z
-        M10.5 2A1.5 1.5 0 0 0 9 3.5v4.213l-1.94 3.105a1 1 0 0 1-.574.432l-2.035.581
-        A2 2 0 0 0 3 13.754v4.793c0 1.078.874 1.953 1.953 1.953.917 0 1.828.148 2.698.438
-        l1.493.498a11 11 0 0 0 3.479.564H16.5a3.5 3.5 0 0 0 3.467-3.017 3.5 3.5 0 0 0
-        1.028-2.671c.32-.529.505-1.15.505-1.812s-.185-1.283-.505-1.812Q21 12.595 21 12.5
-        A3.5 3.5 0 0 0 17.5 9h-1.566c.041-.325.066-.66.066-1 0-1.011-.221-2.194-.446-3.148
-        C15.14 3.097 13.543 2 11.838 2z`;
+    // Encodage URI pour le tab (basé sur CONFIG.STWIDTH)
+    const THUMB_SVG_URI = `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='${CONFIG.STWIDTH}' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='${THUMB_PATH}'/%3E%3C/svg%3E")`;
 
-    // -----------------------------------------------------------------
-    // CSS
-    // -----------------------------------------------------------------
+    let state = { currentId: null, isInjecting: false };
+
+    // --- STYLES ---
     const style = document.createElement('style');
     style.textContent = `
-        :root {
-            --jf-text: #ffffff;
-            --jf-hover-bg: rgba(255, 255, 255, 0.18);
-            --jf-popover-bg: rgba(28, 28, 28, 0.9);
-            --jf-blur: blur(20px);
-            --bezier: cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+        .btnPlayTrailer { display: none !important; }
+        .rating-wrapper { position: relative; display: inline-flex; vertical-align: middle; margin-right: .5em; }
+        
+        /* Base des icônes SVG */
+        .jr-svg-base { fill: none; stroke: currentColor; stroke-width: ${CONFIG.STWIDTH}; stroke-linecap: round; stroke-linejoin: round; }
+        
+        .jr-btn { color: var(--text-primary); cursor: pointer; border: none; background: transparent; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s; outline: none; }
+        .jr-btn:hover { background-color: rgba(255,255,255,0.15); }
+        .jr-btn svg { width: 24px; height: 24px; }
+        
+        .jr-btn[data-rating=\"-1\"].is-active { color: ${CONFIG.COLORS.RED}; }
+        .jr-btn[data-rating=\"1\"].is-active { color: ${CONFIG.COLORS.ORANGE}; }
+        .jr-btn[data-rating=\"2\"].is-active { color: ${CONFIG.COLORS.GREEN}; }
 
-        .rating-wrapper {
-            position: relative;
-            padding: 10px;
-        }
+        .rating-menu { position: absolute; bottom: 55px; left: 50%; transform: translateX(-50%) translateY(10px) scale(0.9); background-color: var(--panel-background, #1c1c1c); backdrop-filter: blur(20px); border-radius: 40px; padding: 4px 8px; display: flex; gap: 4px; visibility: hidden; opacity: 0; transition: all 0.2s ease; box-shadow: 0 8px 24px rgba(0,0,0,0.6); z-index: 1000; border: 1px solid rgba(255,255,255,0.1); }
+        .rating-menu::after { content: ''; position: absolute; bottom: -20px; left: 0; right: 0; height: 25px; }
+        .rating-wrapper:hover .rating-menu, .rating-wrapper.is-open .rating-menu { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+        
+        .opt-btn { position: relative; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-primary); transition: transform 0.1s ease; }
+        .opt-btn:hover { background-color: rgba(255,255,255,0.1); transform: scale(1.15); }
+        .opt-btn[data-rating=\"-1\"].is-selected { color: ${CONFIG.COLORS.RED}; }
+        .opt-btn[data-rating=\"1\"].is-selected { color: ${CONFIG.COLORS.ORANGE}; }
+        .opt-btn[data-rating=\"2\"].is-selected { color: ${CONFIG.COLORS.GREEN}; }
+        .opt-btn svg { width: 22px; height: 22px; }
+        .opt-btn.dislike svg { transform: rotate(180deg); }
+        .opt-btn.love svg { width: 30px; }
+        
+        .opt-btn::before { content: attr(data-label); position: absolute; bottom: 52px; left: 50%; transform: translateX(-50%) translateY(5px); background: transparent; color: #ffffff !important; padding: 4px 10px; font-size: 12px; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; z-index: 1001; }
+        .opt-btn:hover::before { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-        .main-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: none;
-            background: transparent;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.2s ease;
-            outline: none;
-            position: relative;
-            z-index: 5;
-        }
-
-        .main-btn:hover { background-color: var(--jf-hover-bg); }
-
-        .main-btn svg {
-            width: 24px;
-            height: 24px;
-            fill: var(--jf-text);
-        }
-
-
-        .rating-menu {
-            position: absolute;
-            bottom: 65px;
-            left: 50%;
-            transform: translateX(-50%) translateY(15px) scale(0.9);
-            background-color: var(--jf-popover-bg);
-            backdrop-filter: var(--jf-blur);
-            -webkit-backdrop-filter: var(--jf-blur);
-            border-radius: 40px;
-            padding: 6px 12px;
-            display: flex;
-            gap: 8px;
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.25s ease, transform 0.35s var(--bezier), visibility 0.25s;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-
-        /* Pont invisible pour maintenir le hover */
-        .rating-menu::after {
-            content: '';
-            position: absolute;
-            bottom: -35px;
-            left: -20px;
-            right: -20px;
-            top: 0;
-            z-index: -1;
-        }
-
-        .rating-wrapper:hover .rating-menu,
-        .rating-wrapper.is-open .rating-menu {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0) scale(1);
-        }
-
-        .option-btn {
-            position: relative;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.2s var(--bezier);
-        }
-
-        .option-btn:hover {
-            background-color: var(--jf-hover-bg);
-            transform: scale(1.15);
-        }
-
-        .option-btn svg {
-            width: 24px;
-            height: 24px;
-            fill: var(--jf-text);
-        }
-
-        .option-btn.is-selected { opacity: 1; }
-        .option-btn:not(.is-selected) { opacity: 0.6; }
-        .rating-menu:not(.has-selection) .option-btn { opacity: 1; }
-
-        .dislike svg { transform: rotate(180deg); }
-        .love svg { width: 34px; }
-
-        /* Tooltip */
-        .option-btn::before {
-            content: attr(data-label);
-            position: absolute;
-            bottom: 55px;
-            left: 50%;
-            transform: translateX(-50%) translateY(5px);
-            background: #ffffff;
-            color: #000000;
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            font-weight: 600;
-            white-space: nowrap;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-
-        .option-btn:hover::before {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
+        .jr-card-badge { position: absolute; bottom: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 3; box-shadow: 0 2px 5px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); color: #ffffff; }
+        .jr-card-badge svg { width: 16px; height: 16px; }
+        .jr-card-badge[data-rating=\"-1\"] { background: rgba(229, 9, 20, 0.9); }
+        .jr-card-badge[data-rating=\"-1\"] svg { transform: rotate(180deg); }
+        .jr-card-badge[data-rating=\"1\"] { background: rgba(240, 160, 0, 0.9); }
+        .jr-card-badge[data-rating=\"2\"] { background: rgba(0, 160, 80, 0.9); }
+        
+        #jr-tab-panel { width: 100%; display: none; }
+        body.jr-tab-active #jr-tab-panel { display: block !important; }
+        body.jr-tab-active .tab-panel-container > div:not(#jr-tab-panel), body.jr-tab-active .pageContainer > div:not(#jr-tab-panel), body.jr-tab-active .sections { display: none !important; }
+        .jr-header { display: flex; align-items: center; gap: 15px; margin-bottom: 1em; padding: 0 3.3%; }
+        .jr-back-arrow { width: 32px; height: 32px; cursor: pointer; color: var(--text-primary); transition: transform 0.2s; }
+        .jr-back-arrow:hover { transform: translateX(-3px); color: var(--theme-primary-color); }
+        
+        #jr-tab-btn .emby-button-foreground::before {
+            content: ''; display: inline-block; width: 1.25em; height: 1.25em; background-color: currentColor;
+            -webkit-mask-image: ${THUMB_SVG_URI}; mask-image: ${THUMB_SVG_URI};
+            -webkit-mask-size: contain; mask-size: contain; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+            margin-right: 0.5em; vertical-align: middle;
         }
     `;
     document.head.appendChild(style);
 
-    // -----------------------------------------------------------------
-    // SVG helpers
-    // -----------------------------------------------------------------
-    function _svg_thumb_up() {
-        return `<svg viewBox="0 0 24 24"><path d="${THUMB_PATH}"/></svg>`;
+    const UI = { 
+        getSvg: (path) => `<svg class=\"jr-svg-base\" viewBox=\"0 0 24 24\"><path d=\"${path}\"/></svg>`,
+        getDoubleThumb: () => `<svg class=\"jr-svg-base\" viewBox=\"0 0 32 24\"><path opacity=\"0.4\" transform=\"translate(6,0)\" d=\"${THUMB_PATH}\"/><path d=\"${THUMB_PATH}\"/></svg>`,
+        esc: (str) => { const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+    };
+
+    const API = {
+        get: (url) => ApiClient.getJSON(ApiClient.getUrl(url)),
+        ajax: (type, url) => ApiClient.ajax({ type, url: ApiClient.getUrl(url) })
+    };
+
+    // --- NAVIGATION ---
+    function exitRatingsMode() {
+        document.body.classList.remove('jr-tab-active');
+        sessionStorage.removeItem('jr-last-tab');
+        const btn = document.getElementById('jr-tab-btn');
+        if (btn) btn.classList.remove('emby-tab-button-active');
     }
 
-    function _svg_thumb_filled() {
-        return `<svg viewBox="0 0 24 24"><path d="M11.838 2C13.543 2 15.14 3.097 15.626 4.852C15.851 5.806 16.072 6.989 16.072 8C16.072 8.34 16.047 8.675 16.006 9H17.5A3.5 3.5 0 0 1 21 12.5C21 12.595 21 12.69 20.995 12.784Q20.82 13.072 20.495 13.188A3.5 3.5 0 0 1 21 14.512C21 15.174 20.815 15.795 20.495 16.324A3.5 3.5 0 0 1 19.467 18.995A3.5 3.5 0 0 1 16.5 22H13.021A11 11 0 0 1 9.542 21.436L8.049 20.938A8.6 8.6 0 0 1 5.351 20.5C4.272 20.5 3.4 19.625 3.4 18.547V13.754A2 2 0 0 1 4.416 11.968L6.451 11.387A1 1 0 0 0 7.025 10.955L8.965 7.85V3.5A1.5 1.5 0 0 1 10.465 2z"/></svg>`;
+    function enterRatingsMode() {
+        const btn = document.getElementById('jr-tab-btn');
+        const slider = document.querySelector(CONFIG.SELECTORS.TABS_SLIDER);
+        if (slider) slider.querySelectorAll('.emby-tab-button').forEach(b => b.classList.remove('emby-tab-button-active'));
+        if (btn) btn.classList.add('emby-tab-button-active');
+        document.body.classList.add('jr-tab-active');
+        sessionStorage.setItem('jr-last-tab', 'ratings');
+        loadCards();
     }
 
-    function _svg_thumb_down() {
-        return `<svg viewBox="0 0 24 24"><path d="${THUMB_PATH}"/></svg>`;
+    function injectTab() {
+        const slider = document.querySelector(CONFIG.SELECTORS.TABS_SLIDER);
+        if (!slider || document.getElementById('jr-tab-btn')) return;
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.id = 'jr-tab-btn'; btn.setAttribute('is', 'emby-button'); 
+        btn.className = 'emby-tab-button emby-button';
+        btn.innerHTML = `<div class=\"emby-button-foreground\">Votes</div>`;
+        slider.appendChild(btn);
+        const container = document.querySelector(CONFIG.SELECTORS.TAB_CONTAINER) || document.querySelector(CONFIG.SELECTORS.PAGE_CONTAINER) || document.body;
+        let panel = document.getElementById('jr-tab-panel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'jr-tab-panel'; panel.className = 'tabContent';
+            panel.innerHTML = `<div class=\"padded-left padded-right padded-bottom\"><div class=\"jr-header\"><div class=\"jr-back-arrow\"><svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"${BACK_PATH}\"/></svg></div><h2 class=\"sectionTitle\">Mes votes</h2></div><div class=\"verticalSection\"><div class=\"itemsContainer vertical-wrap\" id=\"jr-cards-container\"></div></div></div>`;
+            container.appendChild(panel);
+            panel.querySelector('.jr-back-arrow').onclick = () => {
+                const homeBtn = slider.querySelector('.emby-tab-button:not(#jr-tab-btn)');
+                if (homeBtn) homeBtn.click();
+                exitRatingsMode();
+            };
+        }
+        slider.addEventListener('click', (e) => {
+            const clicked = e.target.closest('.emby-tab-button');
+            if (!clicked) return;
+            if (clicked.id === 'jr-tab-btn') { e.preventDefault(); e.stopPropagation(); enterRatingsMode(); }
+            else { exitRatingsMode(); }
+        }, true);
+        if (sessionStorage.getItem('jr-last-tab') === 'ratings') enterRatingsMode();
     }
 
-    function _svg_double_thumb() {
-        return `
-        <svg viewBox="0 0 32 24">
-            <path opacity="0.4" transform="translate(6,0)" d="${THUMB_PATH}"/>
-            <path d="${THUMB_PATH}"/>
-        </svg>`;
-    }
-
-    // SVG affiché dans le trigger — toujours le même pouce, peu importe le vote
-    function _trigger_svg() {
-        return _svg_thumb_up();
-    }
-
-    // -----------------------------------------------------------------
-    // API calls
-    // -----------------------------------------------------------------
-    async function _load_my_rating(itemId) {
+    async function loadCards() {
+        const container = document.getElementById('jr-cards-container');
+        if (!container) return;
+        container.innerHTML = '<p style=\"padding:1em\">Chargement...</p>';
         try {
             const userId = ApiClient.getCurrentUserId();
-            const res = await fetch(
-                ApiClient.getUrl(`api/MediaRating/MyRating/${itemId}?userId=${userId}`),
-                { headers: { 'X-Emby-Token': ApiClient.accessToken() } }
-            );
-            return await res.json();
-        } catch {
-            return null;
-        }
+            const data = await API.get(`api/MediaRating/User/${userId}`);
+            if (!data.success || !data.ratings?.length) { container.innerHTML = '<p style=\"padding:1em\">Aucun vote.</p>'; return; }
+            const ratingMap = {}; data.ratings.forEach(r => { ratingMap[r.item_id.replace(/-/g, '')] = r.rating; });
+            const ids = data.ratings.map(r => r.item_id.replace(/-/g, '')).join(',');
+            const items = await API.get(`Users/${userId}/Items?Ids=${ids}&Fields=PrimaryImageAspectRatio,ImageTags,ProductionYear`);
+            container.innerHTML = (items.Items || []).map(item => {
+                const imgUrl = ApiClient.getUrl(`Items/${item.Id}/Images/Primary?fillHeight=456&fillWidth=304&quality=96&tag=${item.ImageTags.Primary}`);
+                const rating = ratingMap[item.Id];
+                const detailUrl = `#/details?id=${item.Id}&serverId=${ApiClient.serverId()}`;
+                return `<div class=\"card portraitCard card-hoverable card-withuserdata\" data-id=\"${item.Id}\"><div class=\"cardBox cardBox-bottompadded\"><div class=\"cardScalable\"><div class=\"cardPadder cardPadder-overflowPortrait\"></div><a href=\"${detailUrl}\" class=\"cardImageContainer coveredImage cardContent itemAction lazy\"><div style=\"background-image: url('${imgUrl}');\" class=\"cardImageContainer coveredImage cardContent\"></div><div class=\"jr-card-badge\" data-rating=\"${rating}\">${UI.getSvg(THUMB_PATH)}</div></a></div><div class=\"cardText cardTextCentered cardText-first\"><bdi><a href=\"${detailUrl}\" class=\"itemAction textActionButton\">${UI.esc(item.Name)}</a></bdi></div><div class=\"cardText cardTextCentered cardText-secondary\"><bdi>${item.ProductionYear || ''}</bdi></div></div></div>`;
+            }).join('');
+        } catch (e) { container.innerHTML = '<p>Erreur.</p>'; }
     }
 
-    async function _save_rating(itemId, rating) {
-        try {
-            const userId   = ApiClient.getCurrentUserId();
-            const user     = await ApiClient.getCurrentUser();
-            const userName = user?.Name ?? 'Unknown';
-            const itemRes  = await fetch(
-                ApiClient.getUrl(`Users/${userId}/Items/${itemId}`),
-                { headers: { 'X-Emby-Token': ApiClient.accessToken() } }
-            );
-            const itemData = await itemRes.json();
-            const itemName = itemData?.Name ?? 'Unknown';
-            const url = ApiClient.getUrl(
-                `api/MediaRating/Rate?itemId=${itemId}&userId=${userId}&rating=${rating}&userName=${encodeURIComponent(userName)}&itemName=${encodeURIComponent(itemName)}`
-            );
-            const res = await fetch(url, {
-                method: 'POST',
-                headers: { 'X-Emby-Token': ApiClient.accessToken() }
-            });
-            return await res.json();
-        } catch {
-            return { success: false };
-        }
-    }
-
-    async function _delete_rating(itemId) {
-        try {
-            const userId = ApiClient.getCurrentUserId();
-            const url = ApiClient.getUrl(
-                `api/MediaRating/Rating?itemId=${itemId}&userId=${userId}`
-            );
-            const res = await fetch(url, {
-                method: 'DELETE',
-                headers: { 'X-Emby-Token': ApiClient.accessToken() }
-            });
-            return await res.json();
-        } catch {
-            return { success: false };
-        }
-    }
-
-    // -----------------------------------------------------------------
-    // Widget UI
-    // -----------------------------------------------------------------
-    function _create_widget(itemId) {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'rating-wrapper';
-        wrapper.id = 'jr-widget';
-
-        wrapper.innerHTML = `
-            <button class="main-btn" id="jr-trigger">
-                ${_svg_thumb_up()}
-            </button>
-            <div class="rating-menu" id="jr-menu">
-                <div class="option-btn dislike" data-rating="-1" data-label="Pas pour moi">
-                    ${_svg_thumb_down()}
-                </div>
-                <div class="option-btn" data-rating="1" data-label="J'aime bien">
-                    ${_svg_thumb_up()}
-                </div>
-                <div class="option-btn love" data-rating="2" data-label="J'adore !">
-                    ${_svg_double_thumb()}
-                </div>
-            </div>
-        `;
-
-        const trigger = wrapper.querySelector('#jr-trigger');
-        const menu    = wrapper.querySelector('#jr-menu');
-
-        // Ouverture/fermeture au clic
-        trigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            wrapper.classList.toggle('is-open');
-        });
-
-        document.addEventListener('click', () => wrapper.classList.remove('is-open'));
-        menu.addEventListener('click', (e) => e.stopPropagation());
-
-        // Clic sur une option
-        wrapper.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const newRating = parseInt(btn.dataset.rating);
-                const currentlySelected = btn.classList.contains('is-selected');
-
-                if (currentlySelected) {
-                    // Désélection → supprime le vote
-                    await _delete_rating(itemId);
-                    _apply_selection(wrapper, null);
-                } else {
-                    const result = await _save_rating(itemId, newRating);
-                    if (result.success) {
-                        _apply_selection(wrapper, newRating);
-                    }
-                }
-
-                wrapper.classList.remove('is-open');
-            });
-        });
-
-        return wrapper;
-    }
-
-    // Met à jour l'UI selon le vote actif
-    function _apply_selection(wrapper, rating) {
-        const trigger = wrapper.querySelector('.main-btn');
-        const menu    = wrapper.querySelector('.rating-menu');
-
-        // Reset trigger
-        trigger.classList.remove('is-rated');
-        trigger.innerHTML = _trigger_svg();
-
-        // Reset options
-        menu.classList.remove('has-selection');
-        wrapper.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('is-selected'));
-
-        if (rating === null) return;
-
-        // Pouce plein quand un vote est actif
-        trigger.innerHTML = _svg_thumb_filled();
-
-        menu.classList.add('has-selection');
-
-        // Marque l'option sélectionnée
-        const selected = wrapper.querySelector(`.option-btn[data-rating="${rating}"]`);
-        if (selected) selected.classList.add('is-selected');
-    }
-
-    // -----------------------------------------------------------------
-    // Injection dans la page détail
-    // -----------------------------------------------------------------
-    let _current_item_id  = null;
-    let _is_injecting     = false;
-    let _injection_tries  = 0;
-    const MAX_TRIES       = 25;
-
-    async function _inject_widget() {
-        if (_is_injecting) return;
-
-        // Récupère l'itemId depuis l'URL
-        let itemId = null;
-        const urlParams  = new URLSearchParams(window.location.search);
-        itemId = urlParams.get('id');
-
-        if (!itemId && window.location.hash.includes('?')) {
-            itemId = new URLSearchParams(window.location.hash.split('?')[1]).get('id');
-        }
-
+    // --- WIDGET ---
+    async function injectWidget() {
+        if (state.isInjecting) return;
+        const itemId = new URLSearchParams(window.location.search).get('id') || (window.location.hash.includes('?') ? new URLSearchParams(window.location.hash.split('?')[1]).get('id') : null);
         if (!itemId) return;
-
-        // Déjà injecté pour cet item
-        const existing = document.getElementById('jr-widget');
-        if (existing && _current_item_id === itemId) return;
-        if (existing) existing.remove();
-
-        // Cible le bouton bande-annonce pour le remplacer
-        const trailerBtn = document.querySelector('.btnPlayTrailer');
-
-        if (!trailerBtn) {
-            if (_injection_tries < MAX_TRIES) {
-                _injection_tries++;
-                setTimeout(_inject_widget, 200);
-            }
-            return;
-        }
-
-        _is_injecting    = true;
-        _current_item_id = itemId;
-        _injection_tries = 0;
-
-        // Cache le bouton bande-annonce et insère le widget à sa place
+        if (document.getElementById('jr-widget') && state.currentId === itemId) return;
+        if (document.getElementById('jr-widget')) document.getElementById('jr-widget').remove();
+        const trailerBtn = document.querySelector(CONFIG.SELECTORS.TRAILER_BTN);
+        if (!trailerBtn) return;
+        state.isInjecting = true; state.currentId = itemId;
         trailerBtn.style.display = 'none';
-        const widget = _create_widget(itemId);
+        const widget = document.createElement('div');
+        widget.className = 'rating-wrapper'; widget.id = 'jr-widget';
+        widget.innerHTML = `<button id=\"jr-trigger\" class=\"jr-btn\">${UI.getSvg(THUMB_PATH)}</button><div class=\"rating-menu\"><div class=\"opt-btn dislike\" data-rating=\"-1\" data-label=\"Pas pour moi\">${UI.getSvg(THUMB_PATH)}</div><div class=\"opt-btn\" data-rating=\"1\" data-label=\"J'aime bien\">${UI.getSvg(THUMB_PATH)}</div><div class=\"opt-btn love\" data-rating=\"2\" data-label=\"J'adore !\">${UI.getDoubleThumb()}</div></div>`;
         trailerBtn.parentElement.insertBefore(widget, trailerBtn);
-
-        // Charge le vote existant et l'affiche
-        const data = await _load_my_rating(itemId);
-        if (data?.rating != null) {
-            _apply_selection(widget, data.rating);
-        }
-
-        _is_injecting = false;
+        const data = await API.get(`api/MediaRating/MyRating/${itemId}?userId=${ApiClient.getCurrentUserId()}`);
+        if (data?.rating != null) _updateTrigger(widget, data.rating);
+        document.getElementById('jr-trigger').onclick = (e) => { e.stopPropagation(); widget.classList.toggle('is-open'); };
+        widget.querySelectorAll('.opt-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const val = parseInt(btn.dataset.rating);
+                if (btn.classList.contains('is-selected')) { await API.ajax('DELETE', `api/MediaRating/Rating?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}`); _updateTrigger(widget, null); }
+                else { const item = await API.get(`Users/${ApiClient.getCurrentUserId()}/Items/${itemId}`); await API.ajax('POST', `api/MediaRating/Rate?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}&rating=${val}&itemName=${encodeURIComponent(item.Name)}`); _updateTrigger(widget, val); }
+                widget.classList.remove('is-open');
+            };
+        });
+        state.isInjecting = false;
     }
 
-    function _reset_state() {
-        _is_injecting    = false;
-        _injection_tries = 0;
-        _current_item_id = null;
-        const w = document.getElementById('jr-widget');
-        if (w) w.remove();
+    function _updateTrigger(widget, rating) {
+        const trigger = widget.querySelector('#jr-trigger');
+        trigger.innerHTML = UI.getSvg(THUMB_PATH);
+        trigger.classList.toggle('is-active', rating !== null);
+        trigger.setAttribute('data-rating', rating || '');
+        widget.querySelectorAll('.opt-btn').forEach(b => b.classList.toggle('is-selected', parseInt(b.dataset.rating) === rating));
     }
-
-    // -----------------------------------------------------------------
-    // Navigation (SPA — Jellyfin change l'URL sans reload)
-    // -----------------------------------------------------------------
-    let _last_url = location.href;
 
     new MutationObserver(() => {
-        const url = location.href;
-        if (url !== _last_url) {
-            _last_url = url;
-            _reset_state();
-            setTimeout(_inject_widget, 150);
-            return;
-        }
-
-        // Détection d'ajout de conteneur détail sans changement d'URL
-        const isDetail = window.location.hash.includes('/details') ||
-                         window.location.href.includes('/details');
-        if (isDetail && !document.getElementById('jr-widget')) {
-            setTimeout(_inject_widget, 150);
-        }
+        const isHome = window.location.hash.includes('/home') || window.location.hash === '#' || window.location.hash === '';
+        if (!isHome) document.body.classList.remove('jr-tab-active');
+        else if (sessionStorage.getItem('jr-last-tab') === 'ratings') document.body.classList.add('jr-tab-active');
+        injectTab(); injectWidget();
     }).observe(document.body, { subtree: true, childList: true });
 
-    window.addEventListener('hashchange', () => {
-        _reset_state();
-        setTimeout(_inject_widget, 150);
-    });
-
-    // Tentatives initiales
-    setTimeout(_inject_widget, 100);
-    setTimeout(_inject_widget, 400);
-    setTimeout(_inject_widget, 900);
-
+    injectTab(); injectWidget();
 })();

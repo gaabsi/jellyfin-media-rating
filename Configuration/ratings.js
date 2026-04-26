@@ -185,7 +185,13 @@
             btn.onclick = async () => {
                 const val = parseInt(btn.dataset.rating);
                 if (btn.classList.contains('is-selected')) { await API.ajax('DELETE', `api/MediaRating/Rating?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}`); _updateTrigger(widget, null); }
-                else { const item = await API.get(`Users/${ApiClient.getCurrentUserId()}/Items/${itemId}`); await API.ajax('POST', `api/MediaRating/Rate?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}&rating=${val}&itemName=${encodeURIComponent(item.Name)}`); _updateTrigger(widget, val); }
+                else {
+                    const user = await ApiClient.getCurrentUser();
+                    const userName = user?.Name ?? 'Unknown';
+                    const item = await API.get(`Users/${ApiClient.getCurrentUserId()}/Items/${itemId}`);
+                    await API.ajax('POST', `api/MediaRating/Rate?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}&rating=${val}&userName=${encodeURIComponent(userName)}&itemName=${encodeURIComponent(item.Name)}`);
+                    _updateTrigger(widget, val);
+                }
                 widget.classList.remove('is-open');
             };
         });

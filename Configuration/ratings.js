@@ -92,7 +92,11 @@
 
     const API = {
         get: (url) => ApiClient.getJSON(ApiClient.getUrl(url)),
-        ajax: (type, url) => ApiClient.ajax({ type, url: ApiClient.getUrl(url) })
+        ajax: (type, url, body) => ApiClient.ajax({
+            type,
+            url: ApiClient.getUrl(url),
+            ...(body !== undefined ? { data: JSON.stringify(body), contentType: 'application/json' } : {})
+        })
     };
 
     // --- NAVIGATION ---
@@ -151,16 +155,25 @@
             const userId = ApiClient.getCurrentUserId();
             const data = await API.get(`api/MediaRating/User/${userId}`);
             if (!data.success || !data.ratings?.length) { container.innerHTML = '<p style=\"padding:1em\">Aucun vote.</p>'; return; }
-            const ratingMap = {}; data.ratings.forEach(r => { ratingMap[r.item_id.replace(/-/g, '')] = r.rating; });
             const ids = data.ratings.map(r => r.item_id.replace(/-/g, '')).join(',');
             const items = await API.get(`Users/${userId}/Items?Ids=${ids}&Fields=PrimaryImageAspectRatio,ImageTags,ProductionYear`);
-            container.innerHTML = (items.Items || []).map(item => {
-                const imgUrl = ApiClient.getUrl(`Items/${item.Id}/Images/Primary?fillHeight=456&fillWidth=304&quality=96&tag=${item.ImageTags.Primary}`);
-                const rating = ratingMap[item.Id];
-                const detailUrl = `#/details?id=${item.Id}&serverId=${ApiClient.serverId()}`;
-                return `<div class=\"card portraitCard card-hoverable card-withuserdata\" data-id=\"${item.Id}\"><div class=\"cardBox cardBox-bottompadded\"><div class=\"cardScalable\"><div class=\"cardPadder cardPadder-overflowPortrait\"></div><a href=\"${detailUrl}\" class=\"cardImageContainer coveredImage cardContent itemAction lazy\"><div style=\"background-image: url('${imgUrl}');\" class=\"cardImageContainer coveredImage cardContent\"></div><div class=\"jr-card-badge\" data-rating=\"${rating}\">${UI.getSvg(THUMB_PATH)}</div></a></div><div class=\"cardText cardTextCentered cardText-first\"><bdi><a href=\"${detailUrl}\" class=\"itemAction textActionButton\">${UI.esc(item.Name)}</a></bdi></div><div class=\"cardText cardTextCentered cardText-secondary\"><bdi>${item.ProductionYear || ''}</bdi></div></div></div>`;
-            }).join('');
+            const itemMap = {}; (items.Items || []).forEach(it => { itemMap[it.Id] = it; });
+            container.innerHTML = data.ratings.map(r => _build_card_html(r, itemMap)).join('');
         } catch (e) { container.innerHTML = '<p>Erreur.</p>'; }
+    }
+
+    function _build_card_html(r, itemMap) {
+        const id = r.item_id.replace(/-/g, '');
+        const item = itemMap[id];
+        const name = item?.Name ?? r.item_name ?? '';
+        const year = item?.ProductionYear ?? '';
+        const detailUrl = item ? `#/details?id=${id}&serverId=${ApiClient.serverId()}` : '#';
+        const linkAttr = item ? `class=\"itemAction textActionButton\"` : `style=\"pointer-events:none;opacity:.7\"`;
+        const jellyfinUrl = item?.ImageTags?.Primary ? ApiClient.getUrl(`Items/${id}/Images/Primary?fillHeight=456&fillWidth=304&quality=96&tag=${item.ImageTags.Primary}`) : null;
+        const fallback = r.poster_url ?? '';
+        const primarySrc = jellyfinUrl ?? fallback;
+        const errAttr = jellyfinUrl && fallback ? `onerror=\"this.onerror=null;this.src='${fallback}'\"` : '';
+        return `<div class=\"card portraitCard card-hoverable card-withuserdata\" data-id=\"${id}\"><div class=\"cardBox cardBox-bottompadded\"><div class=\"cardScalable\"><div class=\"cardPadder cardPadder-overflowPortrait\"></div><a href=\"${detailUrl}\" class=\"cardImageContainer coveredImage cardContent itemAction lazy\"><img src=\"${primarySrc}\" ${errAttr} style=\"width:100%;height:100%;object-fit:cover;position:absolute;top:0;left:0\" alt=\"${UI.esc(name)}\"/><div class=\"jr-card-badge\" data-rating=\"${r.rating}\">${UI.getSvg(THUMB_PATH)}</div></a></div><div class=\"cardText cardTextCentered cardText-first\"><bdi><a href=\"${detailUrl}\" ${linkAttr}>${UI.esc(name)}</a></bdi></div><div class=\"cardText cardTextCentered cardText-secondary\"><bdi>${year}</bdi></div></div></div>`;
     }
 
     // --- WIDGET ---
@@ -186,16 +199,43 @@
                 const val = parseInt(btn.dataset.rating);
                 if (btn.classList.contains('is-selected')) { await API.ajax('DELETE', `api/MediaRating/Rating?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}`); _updateTrigger(widget, null); }
                 else {
+                    const userId = ApiClient.getCurrentUserId();
                     const user = await ApiClient.getCurrentUser();
-                    const userName = user?.Name ?? 'Unknown';
-                    const item = await API.get(`Users/${ApiClient.getCurrentUserId()}/Items/${itemId}`);
-                    await API.ajax('POST', `api/MediaRating/Rate?itemId=${itemId}&userId=${ApiClient.getCurrentUserId()}&rating=${val}&userName=${encodeURIComponent(userName)}&itemName=${encodeURIComponent(item.Name)}`);
+                    const item = await API.get(`Users/${userId}/Items/${itemId}?Fields=People,Genres,Studios,Overview,Taglines,ProviderIds`);
+                    const people = item.People || [];
+                    const [posterUrl, logoUrl] = await Promise.all([
+                        _fetchRemoteImageUrl(itemId, 'Primary'),
+                        _fetchRemoteImageUrl(itemId, 'Logo')
+                    ]);
+                    await API.ajax('POST', 'api/MediaRating/Rate', {
+                        itemId,
+                        userId,
+                        rating: val,
+                        userName: user?.Name ?? 'Unknown',
+                        itemName: item.Name ?? 'Unknown',
+                        synopsis: item.Overview ?? null,
+                        headerSynopsis: (item.Taglines && item.Taglines[0]) ?? null,
+                        genres: item.Genres ?? [],
+                        studios: (item.Studios ?? []).map(s => s.Name),
+                        screenwriters: people.filter(p => p.Type === 'Writer').map(p => p.Name),
+                        cast: people.filter(p => p.Type === 'Actor').map(p => ({ name: p.Name, role: p.Role ?? '' })),
+                        tmdbId: item.ProviderIds?.Tmdb ?? null,
+                        posterUrl,
+                        logoUrl
+                    });
                     _updateTrigger(widget, val);
                 }
                 widget.classList.remove('is-open');
             };
         });
         state.isInjecting = false;
+    }
+
+    async function _fetchRemoteImageUrl(itemId, type) {
+        try {
+            const data = await API.get(`Items/${itemId}/RemoteImages?providerName=TheMovieDb&type=${type}&limit=1`);
+            return data?.Images?.[0]?.Url ?? null;
+        } catch { return null; }
     }
 
     function _updateTrigger(widget, rating) {

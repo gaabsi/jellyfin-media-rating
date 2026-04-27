@@ -70,7 +70,7 @@
         
         #jr-tab-panel { width: 100%; display: none; }
         body.jr-tab-active #jr-tab-panel { display: block !important; }
-        body.jr-tab-active .tab-panel-container > div:not(#jr-tab-panel), body.jr-tab-active .pageContainer > div:not(#jr-tab-panel), body.jr-tab-active .sections { display: none !important; }
+        body.jr-tab-active .tab-panel-container > div:not(#jr-tab-panel), body.jr-tab-active .pageContainer > div:not(#jr-tab-panel), body.jr-tab-active .sections, body.jr-tab-active #slides-container { display: none !important; }
         .jr-header { display: flex; align-items: center; gap: 15px; margin-bottom: 1em; padding: 0 3.3%; }
         .jr-back-arrow { width: 32px; height: 32px; cursor: pointer; color: var(--text-primary); transition: transform 0.2s; }
         .jr-back-arrow:hover { transform: translateX(-3px); color: var(--theme-primary-color); }

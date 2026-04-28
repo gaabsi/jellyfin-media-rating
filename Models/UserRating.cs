@@ -22,5 +22,7 @@ namespace Jellyfin.Plugin.Rating.Models
         public string? TmdbId { get; set; }
         public string? PosterUrl { get; set; }
         public string? LogoUrl { get; set; }
+        public bool InLibrary { get; set; } = true;
+        public string? MediaType { get; set; }
     }
 }

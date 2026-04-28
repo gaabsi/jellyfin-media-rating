@@ -1,4 +1,4 @@
-<div id="MediaRatingConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button">
+<div id="MediaRatingConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-button,emby-input">
     <div data-role="content">
         <div class="content-primary">
             <div class="verticalSection verticalSection-extrabottompadding">
@@ -8,6 +8,45 @@
                 <p>Plugin de notation style Netflix — dislike / like / love.</p>
                 <p>Les votes sont stockés de manière sécurisée dans la configuration du plugin.</p>
             </div>
+
+            <form class="mediaRatingConfigForm">
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Intégration Seerr</h2>
+                    <p>Connecte ton instance Seerr / Overseerr pour activer la recherche dans le tab "Mes votes".</p>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="text" id="txtSeerrUrl" label="URL Seerr (ex: http://192.168.1.10:5055)" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="txtSeerrApiKey" label="Clé API Seerr" />
+                        <div class="fieldDescription">Settings → General → API Key dans Seerr.</div>
+                    </div>
+
+                    <div style="margin-top: 1em; display: flex; gap: 1em; align-items: center;">
+                        <button is="emby-button" type="button" id="btnTestSeerr" class="raised">
+                            <span>Tester la connexion</span>
+                        </button>
+                        <span id="seerrTestFeedback" style="font-weight: 600;"></span>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <h2 class="sectionTitle">Intégration TMDB</h2>
+                    <p>Clé API TMDB (v3) — utilisée pour récupérer les logos des films/séries sur la page détail Seerr. Génération gratuite sur <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener">themoviedb.org/settings/api</a>.</p>
+
+                    <div class="inputContainer">
+                        <input is="emby-input" type="password" id="txtTmdbApiKey" label="Clé API TMDB (v3)" />
+                        <div class="fieldDescription">Champ "API Key (v3 auth)" sur la page TMDB.</div>
+                    </div>
+                </div>
+
+                <div class="verticalSection">
+                    <button is="emby-button" type="submit" class="raised button-submit block">
+                        <span>Sauvegarder</span>
+                    </button>
+                </div>
+            </form>
 
             <div class="verticalSection">
                 <h2 class="sectionTitle">Informations</h2>
@@ -22,4 +61,70 @@
             </div>
         </div>
     </div>
+
+    <script type="text/javascript">
+        (function () {
+            const PLUGIN_ID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+
+            function loadConfig(page) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+                    page.querySelector('#txtSeerrUrl').value = config.SeerrUrl || '';
+                    page.querySelector('#txtSeerrApiKey').value = config.SeerrApiKey || '';
+                    page.querySelector('#txtTmdbApiKey').value = config.TmdbApiKey || '';
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function saveConfig(page) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(PLUGIN_ID).then(function (config) {
+                    config.SeerrUrl = page.querySelector('#txtSeerrUrl').value.trim().replace(/\/+$/, '');
+                    config.SeerrApiKey = page.querySelector('#txtSeerrApiKey').value.trim();
+                    config.TmdbApiKey = page.querySelector('#txtTmdbApiKey').value.trim();
+                    ApiClient.updatePluginConfiguration(PLUGIN_ID, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+            }
+
+            function testSeerr(page) {
+                const feedback = page.querySelector('#seerrTestFeedback');
+                const url    = page.querySelector('#txtSeerrUrl').value.trim().replace(/\/+$/, '');
+                const apiKey = page.querySelector('#txtSeerrApiKey').value.trim();
+                feedback.style.color = '';
+                feedback.textContent = 'Test en cours...';
+                ApiClient.ajax({
+                    type: 'GET',
+                    url: ApiClient.getUrl('api/MediaRating/SeerrTest', { url: url, apiKey: apiKey }),
+                    dataType: 'json'
+                }).then(function (res) {
+                    if (res && res.success) {
+                        feedback.style.color = '#34c759';
+                        feedback.textContent = '✅ Connexion OK' + (res.version ? ' (v' + res.version + ')' : '');
+                    } else {
+                        feedback.style.color = '#ff3b30';
+                        feedback.textContent = '❌ ' + (res && res.message ? res.message : 'Échec de la connexion');
+                    }
+                }).catch(function () {
+                    feedback.style.color = '#ff3b30';
+                    feedback.textContent = '❌ Erreur réseau';
+                });
+            }
+
+            document.querySelector('#MediaRatingConfigPage').addEventListener('pageshow', function () {
+                loadConfig(this);
+            });
+
+            document.querySelector('.mediaRatingConfigForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                saveConfig(document.querySelector('#MediaRatingConfigPage'));
+                return false;
+            });
+
+            document.querySelector('#btnTestSeerr').addEventListener('click', function () {
+                testSeerr(document.querySelector('#MediaRatingConfigPage'));
+            });
+        })();
+    </script>
 </div>

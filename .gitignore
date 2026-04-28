@@ -8,3 +8,6 @@ test-env/
 docker-compose.yml
 deploy.sh
 .env
+
+# Plans / notes locales
+*.md

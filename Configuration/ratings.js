@@ -101,7 +101,8 @@
         body.jr-detail-active .tab-panel-container > div:not(#jr-seerr-detail-page),
         body.jr-detail-active .pageContainer > div:not(#jr-seerr-detail-page),
         body.jr-detail-active .sections,
-        body.jr-detail-active #slides-container { display: none !important; }
+        body.jr-detail-active #slides-container,
+        body.jr-detail-active .pageContainer > .page:not(#jr-seerr-detail-page) { display: none !important; }
         .jr-detail-status { padding: 4em 1em; text-align: center; opacity: 0.7; }
         .jr-detail-back { position: fixed; top: 70px; left: 1em; z-index: 200; width: 42px; height: 42px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .jr-detail-back:hover { background: rgba(0,0,0,0.85); }
@@ -190,11 +191,16 @@
         if (btn) btn.classList.remove('emby-tab-button-active');
     }
 
-    function enterRatingsMode() {
-        const btn = document.getElementById('jr-tab-btn');
+    function _syncTabHighlight() {
         const slider = document.querySelector(CONFIG.SELECTORS.TABS_SLIDER);
-        if (slider) slider.querySelectorAll('.emby-tab-button').forEach(b => b.classList.remove('emby-tab-button-active'));
+        if (!slider) return;
+        slider.querySelectorAll('.emby-tab-button').forEach(b => b.classList.remove('emby-tab-button-active'));
+        const btn = document.getElementById('jr-tab-btn');
         if (btn) btn.classList.add('emby-tab-button-active');
+    }
+
+    function enterRatingsMode() {
+        _syncTabHighlight();
         document.body.classList.add('jr-tab-active');
         sessionStorage.setItem('jr-last-tab', 'ratings');
         loadCards();
@@ -683,6 +689,7 @@
         const isHome = window.location.hash.includes('/home') || window.location.hash === '#' || window.location.hash === '';
         if (!isHome) document.body.classList.remove('jr-tab-active');
         else if (sessionStorage.getItem('jr-last-tab') === 'ratings') document.body.classList.add('jr-tab-active');
+        if (document.body.classList.contains('jr-tab-active')) _syncTabHighlight();
         injectTab(); injectWidget();
     }).observe(document.body, { subtree: true, childList: true });
 

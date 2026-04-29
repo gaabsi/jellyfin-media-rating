@@ -453,6 +453,16 @@
         return { label: 'Demander', svg: SVG_REQUEST, variant: 'demander', disabled: false };
     }
 
+    function _apply_btn_config(btn, cfg) {
+        if (!btn || !cfg) return;
+        const label = btn.querySelector('.jr-btn-label');
+        const icon = btn.querySelector('.jr-btn-icon');
+        if (label) label.textContent = cfg.label;
+        if (icon) icon.innerHTML = cfg.svg;
+        btn.className = `jr-btn-request jr-btn-variant-${cfg.variant}`;
+        btn.disabled = !!cfg.disabled;
+    }
+
     function _build_detail_html(d, mediaType, logos) {
         const title    = d.title || d.name || '';
         const date     = d.releaseDate || d.firstAirDate || '';
@@ -533,8 +543,8 @@
             btn.onclick = async () => {
                 if (btn.dataset.busy === '1') return;
                 btn.dataset.busy = '1';
-                const original_label = btn.querySelector('span')?.textContent;
-                if (original_label) btn.querySelector('span').textContent = 'Envoi...';
+                const labelEl = btn.querySelector('.jr-btn-label');
+                if (labelEl) labelEl.textContent = 'Envoi...';
                 btn.disabled = true;
                 try {
                     const res = await API.ajax('POST', 'api/MediaRating/SeerrRequest', {
@@ -543,16 +553,14 @@
                         jellyfinUserId: ApiClient.getCurrentUserId()
                     }, 'json');
                     if (res?.success) {
-                        if (original_label) btn.querySelector('span').textContent = 'Demandé ✓';
+                        _apply_btn_config(btn, _request_button_config(2));
                     } else {
                         alert(res?.message || 'Erreur lors de la demande');
-                        if (original_label) btn.querySelector('span').textContent = original_label;
-                        btn.disabled = false;
+                        _apply_btn_config(btn, _request_button_config(1));
                     }
                 } catch (e) {
                     alert('Erreur réseau : ' + e.message);
-                    if (original_label) btn.querySelector('span').textContent = original_label;
-                    btn.disabled = false;
+                    _apply_btn_config(btn, _request_button_config(1));
                 } finally {
                     btn.dataset.busy = '0';
                 }

@@ -86,6 +86,9 @@
         body.jr-search-active #jr-search-results { display: flex; flex-wrap: wrap; }
         body.jr-search-active #jr-cards-container { display: none; }
         .jr-search-status { padding: 1em; opacity: 0.7; flex-basis: 100%; }
+        @media (max-width: 800px) {
+            body.jr-tab-active #jr-tab-panel { padding-top: 7em; }
+        }
         
         #jr-seerr-detail-page { display: none; }
         body.jr-detail-active #jr-seerr-detail-page { display: flex !important; flex-direction: column; position: relative; z-index: 150; min-height: 100vh; background: transparent; }
@@ -685,5 +688,8 @@
 
     window.addEventListener('hashchange', _handle_detail_route);
 
+    // Refresh = retour home : on vide la persistance de tab uniquement au chargement
+    // initial du script (le script ne re-tourne pas sur navigation SPA interne).
+    sessionStorage.removeItem('jr-last-tab');
     injectTab(); injectWidget(); _handle_detail_route();
 })();

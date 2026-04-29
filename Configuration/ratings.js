@@ -21,7 +21,6 @@
     
     // Ton icône originale (contour silhouette)
     const THUMB_PATH = `M10.5 2A1.5 1.5 0 0 0 9 3.5v4.213l-1.94 3.105a1 1 0 0 1-.574.432l-2.035.581 A2 2 0 0 0 3 13.754v4.793c0 1.078.874 1.953 1.953 1.953.917 0 1.828.148 2.698.438 l1.493.498a11 11 0 0 0 3.479.564H16.5a3.5 3.5 0 0 0 3.467-3.017 3.5 3.5 0 0 0 1.028-2.671c.32-.529.505-1.15.505-1.812s-.185-1.283-.505-1.812Q21 12.595 21 12.5 A3.5 3.5 0 0 0 17.5 9h-1.566c.041-.325.066-.66.066-1 0-1.011-.221-2.194-.446-3.148 C15.14 3.097 13.543 2 11.838 2z`;
-    const BACK_PATH = `M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z`;
     const CAL_PATH  = `M3 7a3 3 0 013-3h12a3 3 0 013 3v11a3 3 0 01-3 3H6a3 3 0 01-3-3V7z M3 9h18 M8 2v4 M16 2v4 M7 12h2v2H7v-2z M11 12h2v2h-2v-2z M15 12h2v2h-2v-2z M7 16h2v2H7v-2z M11 16h2v2h-2v-2z M15 17.5l1.5 1.5 3-3`;
     const AUDIO_PATH = `M3 9v6h4l5 5V4L7 9H3z M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z`;
     const PIN_PATH  = `M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z`;
@@ -104,9 +103,6 @@
         body.jr-detail-active #slides-container,
         body.jr-detail-active .pageContainer > .page:not(#jr-seerr-detail-page) { display: none !important; }
         .jr-detail-status { padding: 4em 1em; text-align: center; opacity: 0.7; }
-        .jr-detail-back { position: fixed; top: 70px; left: 1em; z-index: 200; width: 42px; height: 42px; border-radius: 50%; background: rgba(0,0,0,0.6); color: #fff; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .jr-detail-back:hover { background: rgba(0,0,0,0.85); }
-        .jr-detail-back svg { width: 22px; height: 22px; }
         #jr-seerr-detail-page .jr-btn-row { margin-top: 1em; display: flex; justify-content: center; align-items: center; gap: 0.8em; }
         #jr-seerr-detail-page .jr-btn-request { display: inline-flex; align-items: center; gap: 0.4em; padding: 0.4rem 0.9rem; border-radius: 0.375rem; border: 1px solid; font-family: inherit; font-size: 0.875rem; font-weight: 500; line-height: 1.25rem; color: #fff; cursor: pointer; transition: background-color 150ms ease-in-out, border-color 150ms ease-in-out; }
         #jr-seerr-detail-page .jr-btn-request:focus { outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.4); }
@@ -153,6 +149,18 @@
         #jr-seerr-detail-page .jr-info-panel .detailsGroupItem span { display: block; opacity: 0.95; line-height: 1.35; }
         #jr-seerr-detail-page .jr-info-panel .detailsGroupItem label { margin-bottom: 0.35em; }
         #jr-seerr-detail-page .detailPagePrimaryContent { background: transparent; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); padding: 0.5em 4em 1.5em !important; margin-top: 0; }
+
+        @media (max-width: 800px) {
+            #jr-seerr-detail-page .jr-hero { min-height: 40vh; padding: 6em 1em 1em; gap: 0.8em; }
+            #jr-seerr-detail-page .jr-hero-logo { width: 70%; max-height: 140px; }
+            #jr-seerr-detail-page h1.itemName { font-size: 1.6em; }
+            #jr-seerr-detail-page .detailPagePrimaryContent { padding: 0.5em 1em 1.5em !important; }
+            #jr-seerr-detail-page .jr-cast-card { width: 100px; margin-right: 0.8em; }
+            #jr-seerr-detail-page .jr-cast-avatar { width: 100px; height: 100px; }
+            #jr-seerr-detail-page .jr-cast-name { font-size: 0.85em; }
+            #jr-seerr-detail-page .jr-cast-role { font-size: 0.75em; }
+            #jr-seerr-detail-page .jr-info-panel { flex: 1 1 100%; }
+        }
 
         #jr-tab-btn .emby-button-foreground::before {
             content: ''; display: inline-block; width: 1.25em; height: 1.25em; background-color: currentColor;
@@ -481,7 +489,6 @@
         }).join('');
 
         return `
-        <button class=\"jr-detail-back\" type=\"button\" title=\"Retour\">${UI.getSvg(BACK_PATH)}</button>
         ${backdrop ? `<div class=\"jr-backdrop-fixed\" style=\"background-image:url('${backdrop}')\"></div>` : ''}
         <div class=\"detailPageWrapperContainer padded-bottom-page\">
             <div class=\"jr-hero\">
@@ -521,8 +528,6 @@
     }
 
     function _bind_detail(panel, route, d, logos) {
-        const back = panel.querySelector('.jr-detail-back');
-        if (back) back.onclick = () => history.back();
         const btn = panel.querySelector('#jr-btn-request');
         if (btn && !btn.disabled) {
             btn.onclick = async () => {

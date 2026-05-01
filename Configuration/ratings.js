@@ -203,24 +203,35 @@
         .jr-cal-cell.is-today { background-color: rgba(34,197,94,0.18); outline: 1px solid rgba(34,197,94,0.6); }
         .jr-cal-day-num { font-size: 0.95em; font-weight: 500; opacity: 0.85; }
         .jr-cal-day-num .jr-cal-month { font-size: 0.75em; opacity: 0.6; margin-left: 4px; text-transform: uppercase; }
-        .jr-cal-release { font-size: 0.8em; line-height: 1.25; padding: 3px 6px; background-color: rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .jr-cal-release { font-size: 0.8em; line-height: 1.25; padding: 3px 6px 3px 8px; background-color: rgba(255,255,255,0.08); border-radius: 4px; border-left: 3px solid var(--release-color, transparent); cursor: pointer; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .jr-cal-release:hover { background-color: rgba(255,255,255,0.18); }
+        .jr-cal-release.movie { --release-color: #a855f7; }
+        .jr-cal-release.series { --release-color: #3b82f6; }
         .jr-cal-empty { padding: 3em; text-align: center; opacity: 0.6; }
         @media (max-width: 720px) {
             .jr-cal-header { flex-direction: column; align-items: flex-start; gap: 0.75em; padding: 1.25em 1em 0.75em; }
             .jr-cal-title { font-size: 1.3em; }
             .jr-cal-nav { width: 100%; justify-content: space-between; }
             .jr-cal-range { min-width: 0; flex: 1; font-size: 0.95em; }
-            .jr-cal-list { padding: 0 1em 2em; display: flex; flex-direction: column; gap: 1.25em; }
-            .jr-cal-week { display: flex; flex-direction: column; gap: 0.5em; }
-            .jr-cal-week-label { font-size: 0.85em; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0.25em; }
-            .jr-cal-day { background-color: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.6em 0.75em; display: flex; flex-direction: column; gap: 0.4em; }
-            .jr-cal-day.is-today { background-color: rgba(34,197,94,0.18); outline: 1px solid rgba(34,197,94,0.6); }
-            .jr-cal-day.is-past { opacity: 0.55; }
-            .jr-cal-day-head { font-size: 0.9em; font-weight: 500; opacity: 0.85; }
-            .jr-cal-release-row { font-size: 0.95em; padding: 0.5em 0.75em; background-color: rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; min-height: 36px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .jr-cal-release-row:hover, .jr-cal-release-row:active { background-color: rgba(255,255,255,0.18); }
-            .jr-cal-day-empty { font-size: 0.85em; opacity: 0.5; padding: 0.5em 0.25em; font-style: italic; }
+            .jr-cal-grid-4x4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 0 0.75em 0.5em; }
+            .jr-cal-cell-4x4 { background-color: rgba(255,255,255,0.04); border-radius: 6px; padding: 5px 5px 6px; display: flex; flex-direction: column; gap: 3px; min-height: 95px; cursor: pointer; transition: background-color 0.15s; }
+            .jr-cal-cell-4x4.is-today { background-color: rgba(34,197,94,0.18); outline: 1px solid rgba(34,197,94,0.6); }
+            .jr-cal-cell-4x4.is-past { opacity: 0.5; }
+            .jr-cal-cell-4x4.is-selected { background-color: rgba(255,255,255,0.16); outline: 1px solid rgba(255,255,255,0.4); }
+            .jr-cal-cell-4x4.is-empty { cursor: default; }
+            .jr-cal-cell-head { font-size: 0.75em; font-weight: 500; opacity: 0.75; padding-bottom: 2px; }
+            .jr-cal-cell-release { font-size: 0.7em; line-height: 1.2; padding: 2px 4px 2px 5px; background-color: rgba(255,255,255,0.08); border-radius: 3px; border-left: 3px solid var(--release-color, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+            .jr-cal-cell-release:hover, .jr-cal-cell-release:active { background-color: rgba(255,255,255,0.18); }
+            .jr-cal-cell-release.movie { --release-color: #a855f7; }
+            .jr-cal-cell-release.series { --release-color: #3b82f6; }
+            .jr-cal-cell-more { font-size: 0.65em; opacity: 0.7; padding: 2px 4px; background-color: rgba(255,255,255,0.05); border-radius: 3px; text-align: center; cursor: pointer; }
+            .jr-cal-expand-mobile { padding: 0.5em 1em 1.5em; }
+            .jr-cal-expand-mobile:empty { padding: 0; }
+            .jr-cal-expand-head { font-size: 0.95em; font-weight: 500; opacity: 0.85; margin-bottom: 0.6em; padding: 0 0.25em; }
+            .jr-cal-expand-row { display: block; padding: 0.55em 0.75em 0.55em 0.85em; background-color: rgba(255,255,255,0.06); border-radius: 6px; border-left: 3px solid var(--release-color, transparent); margin-bottom: 0.4em; cursor: pointer; font-size: 0.95em; }
+            .jr-cal-expand-row:hover, .jr-cal-expand-row:active { background-color: rgba(255,255,255,0.14); }
+            .jr-cal-expand-row.movie { --release-color: #a855f7; }
+            .jr-cal-expand-row.series { --release-color: #3b82f6; }
         }
     `;
     document.head.appendChild(style);
@@ -288,6 +299,7 @@
     const SVG_CHEVRON_RIGHT = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>';
 
     let _cal_offset_days = 0;
+    let _cal_selected_iso = null;
     let _cal_resize_bound = false;
     let _cal_resize_timer = null;
 
@@ -321,8 +333,8 @@
             </div>
             <div id="jr-cal-body"></div>
         `;
-        document.getElementById('jr-cal-prev').onclick = () => { _cal_offset_days -= 14; _render_calendar_body(); };
-        document.getElementById('jr-cal-next').onclick = () => { _cal_offset_days += 14; _render_calendar_body(); };
+        document.getElementById('jr-cal-prev').onclick = () => { _cal_offset_days -= 14; _cal_selected_iso = null; _render_calendar_body(); };
+        document.getElementById('jr-cal-next').onclick = () => { _cal_offset_days += 14; _cal_selected_iso = null; _render_calendar_body(); };
         _bind_calendar_resize();
         await _render_calendar_body();
     }
@@ -344,11 +356,13 @@
             const monitorings = res?.data || [];
             const anchor = new Date();
             anchor.setDate(anchor.getDate() + _cal_offset_days);
-            const days = _compute_calendar_days(anchor);
             const items = _flatten_releases(monitorings);
             const by_day = _group_by_day(items);
-            body.innerHTML = _is_mobile_view() ? _build_calendar_list_html(days, by_day) : _build_calendar_html(days, by_day);
-            _bind_calendar_clicks(body);
+            const mobile = _is_mobile_view();
+            const days = mobile ? _compute_calendar_days_mobile(anchor) : _compute_calendar_days(anchor);
+            body.innerHTML = mobile ? _build_calendar_mobile_html(days, by_day) : _build_calendar_html(days, by_day);
+            if (mobile) _render_mobile_expand(by_day);
+            _bind_calendar_clicks(body, by_day, mobile);
             const range_el = document.getElementById('jr-cal-range');
             if (range_el) range_el.textContent = _format_range(days);
         } catch (e) {
@@ -368,40 +382,87 @@
             const day_num = d.getDate();
             const month_label = day_num === 1 ? `<span class="jr-cal-month">${MONTH_LABELS[d.getMonth()]}</span>` : '';
             const releases_html = releases.map(r =>
-                `<div class="jr-cal-release" data-tmdb-id="${UI.esc(r.tmdbId)}" data-media-type="${r.mediaType}" title="${UI.esc(r.label)}">${UI.esc(r.label)}</div>`
+                `<div class="jr-cal-release ${r.mediaType === 'series' ? 'series' : 'movie'}" data-tmdb-id="${UI.esc(r.tmdbId)}" data-media-type="${r.mediaType}" title="${UI.esc(r.label)}">${UI.esc(r.label)}</div>`
             ).join('');
             return `<div class="${cls}"><div class="jr-cal-day-num">${day_num}${month_label}</div>${releases_html}</div>`;
         }).join('');
         return `<div class="jr-cal-grid">${dow_html}${cells_html}</div>`;
     }
 
-    function _build_calendar_list_html(days, by_day) {
+    function _build_calendar_mobile_html(days, by_day) {
         const today_iso = _iso_day(new Date());
-        const weeks = [];
-        for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-        return `<div class="jr-cal-list">${weeks.map(week => {
-            const week_label = `Sem. du ${week[0].getDate()} ${MONTH_LABELS[week[0].getMonth()]}`;
-            const days_with_releases = week.filter(d => (by_day.get(_iso_day(d)) || []).length > 0);
-            const inner = days_with_releases.length === 0
-                ? `<div class="jr-cal-day-empty">Aucune sortie cette semaine</div>`
-                : days_with_releases.map(d => {
-                    const iso = _iso_day(d);
-                    const releases = by_day.get(iso) || [];
-                    const is_today = iso === today_iso;
-                    const is_past = iso < today_iso;
-                    const cls = ['jr-cal-day', is_today ? 'is-today' : '', is_past ? 'is-past' : ''].filter(Boolean).join(' ');
-                    const head = `${DOW_LABELS[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTH_LABELS[d.getMonth()]}`;
-                    const rows = releases.map(r =>
-                        `<div class="jr-cal-release-row" data-tmdb-id="${UI.esc(r.tmdbId)}" data-media-type="${r.mediaType}" title="${UI.esc(r.label)}">${UI.esc(r.label)}</div>`
-                    ).join('');
-                    return `<div class="${cls}"><div class="jr-cal-day-head">${head}</div>${rows}</div>`;
-                }).join('');
-            return `<div class="jr-cal-week"><div class="jr-cal-week-label">${week_label}</div>${inner}</div>`;
-        }).join('')}</div>`;
+        const MAX_INLINE = 2;
+        const cells_html = days.map(d => {
+            const iso = _iso_day(d);
+            const releases = by_day.get(iso) || [];
+            const is_today = iso === today_iso;
+            const is_past = iso < today_iso;
+            const is_empty = releases.length === 0;
+            const is_selected = iso === _cal_selected_iso;
+            const cls = ['jr-cal-cell-4x4',
+                is_today ? 'is-today' : '',
+                is_past ? 'is-past' : '',
+                is_empty ? 'is-empty' : '',
+                is_selected ? 'is-selected' : ''].filter(Boolean).join(' ');
+            const head = `${DOW_LABELS[(d.getDay() + 6) % 7]} ${d.getDate()}`;
+            const shown = releases.slice(0, MAX_INLINE);
+            const overflow = releases.length - shown.length;
+            const rows = shown.map(r =>
+                `<div class="jr-cal-cell-release ${r.mediaType === 'series' ? 'series' : 'movie'}" data-tmdb-id="${UI.esc(r.tmdbId)}" data-media-type="${r.mediaType}" title="${UI.esc(r.label)}">${UI.esc(r.label)}</div>`
+            ).join('');
+            const more = overflow > 0
+                ? `<div class="jr-cal-cell-more">+${overflow} autre${overflow > 1 ? 's' : ''}</div>`
+                : '';
+            return `<div class="${cls}" data-iso="${iso}"><div class="jr-cal-cell-head">${head}</div>${rows}${more}</div>`;
+        }).join('');
+        return `<div class="jr-cal-grid-4x4">${cells_html}</div><div id="jr-cal-expand-mobile" class="jr-cal-expand-mobile"></div>`;
     }
 
-    function _bind_calendar_clicks(body) {
-        body.querySelectorAll('.jr-cal-release, .jr-cal-release-row').forEach(el => {
+    function _render_mobile_expand(by_day) {
+        const panel = document.getElementById('jr-cal-expand-mobile');
+        if (!panel) return;
+        document.querySelectorAll('.jr-cal-cell-4x4').forEach(c => {
+            c.classList.toggle('is-selected', c.dataset.iso === _cal_selected_iso);
+        });
+        if (!_cal_selected_iso) { panel.innerHTML = ''; return; }
+        const releases = by_day.get(_cal_selected_iso) || [];
+        if (!releases.length) { panel.innerHTML = ''; return; }
+        const [y, m, d] = _cal_selected_iso.split('-').map(Number);
+        const date = new Date(y, m - 1, d);
+        const head = `${DOW_LABELS[(date.getDay() + 6) % 7]} ${d} ${MONTH_LABELS[m - 1]}`;
+        const rows = releases.map(r =>
+            `<div class="jr-cal-expand-row ${r.mediaType === 'series' ? 'series' : 'movie'}" data-tmdb-id="${UI.esc(r.tmdbId)}" data-media-type="${r.mediaType}">${UI.esc(r.label)}</div>`
+        ).join('');
+        panel.innerHTML = `<div class="jr-cal-expand-head">${head}</div>${rows}`;
+    }
+
+    function _bind_calendar_clicks(body, by_day, mobile) {
+        const nav_to = (el) => {
+            const tmdbId = el.dataset.tmdbId;
+            const mediaType = el.dataset.mediaType === 'series' ? 'tv' : 'movie';
+            window.location.hash = `#!/jr-seerr-detail?id=${tmdbId}&type=${mediaType}`;
+        };
+        body.querySelectorAll('.jr-cal-release').forEach(el => { el.onclick = () => nav_to(el); });
+        if (!mobile) return;
+        body.querySelectorAll('.jr-cal-cell-release').forEach(el => {
+            el.onclick = (e) => { e.stopPropagation(); nav_to(el); };
+        });
+        body.querySelectorAll('.jr-cal-cell-4x4').forEach(cell => {
+            if (cell.classList.contains('is-empty')) return;
+            cell.onclick = () => {
+                const iso = cell.dataset.iso;
+                _cal_selected_iso = (_cal_selected_iso === iso) ? null : iso;
+                _render_mobile_expand(by_day);
+                _bind_expand_clicks(by_day);
+            };
+        });
+        _bind_expand_clicks(by_day);
+    }
+
+    function _bind_expand_clicks(by_day) {
+        const panel = document.getElementById('jr-cal-expand-mobile');
+        if (!panel) return;
+        panel.querySelectorAll('.jr-cal-expand-row').forEach(el => {
             el.onclick = () => {
                 const tmdbId = el.dataset.tmdbId;
                 const mediaType = el.dataset.mediaType === 'series' ? 'tv' : 'movie';
@@ -420,7 +481,13 @@
         });
     }
 
+    function _is_home_route() {
+        const h = window.location.hash;
+        return h.includes('/home') || h === '#' || h === '';
+    }
+
     function injectTab() {
+        if (!_is_home_route()) return;
         const slider = document.querySelector(CONFIG.SELECTORS.TABS_SLIDER);
         if (!slider) return;
         _hide_native_favorites_tab();
@@ -757,6 +824,18 @@
         const start = new Date(monday_curr);
         start.setDate(start.getDate() - 7);
         return Array.from({ length: 28 }, (_, i) => {
+            const d = new Date(start);
+            d.setDate(d.getDate() + i);
+            return d;
+        });
+    }
+
+    function _compute_calendar_days_mobile(today) {
+        // Mobile 4x4 : 16 jours du lundi de la semaine courante (N) → +15j (= 2 semaines + Lun/Mar de la 3ème).
+        const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const offset = (start.getDay() + 6) % 7;
+        start.setDate(start.getDate() - offset);
+        return Array.from({ length: 16 }, (_, i) => {
             const d = new Date(start);
             d.setDate(d.getDate() + i);
             return d;
@@ -1115,7 +1194,7 @@
     }
 
     new MutationObserver(() => {
-        const isHome = window.location.hash.includes('/home') || window.location.hash === '#' || window.location.hash === '';
+        const isHome = _is_home_route();
         if (!isHome) {
             document.body.classList.remove('jr-tab-active');
             document.body.classList.remove('jr-monitoring-active');

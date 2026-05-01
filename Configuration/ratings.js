@@ -87,8 +87,13 @@
         body.jr-search-active #jr-cards-container { display: none; }
         body.jr-search-active #jr-section-tonote, body.jr-search-active #jr-section-rated { display: none !important; }
         .jr-search-status { padding: 1em; opacity: 0.7; flex-basis: 100%; }
-        @media (max-width: 800px) {
-            body.jr-tab-active #jr-tab-panel { padding-top: 7em; }
+        @media (max-width: 720px) {
+            body.jr-tab-active #jr-tab-panel,
+            body.jr-monitoring-active #jr-monitoring-panel { padding-top: 5em; }
+        }
+        @media (min-width: 721px) and (max-width: 1024px) {
+            body.jr-tab-active #jr-tab-panel,
+            body.jr-monitoring-active #jr-monitoring-panel { padding-top: 3em; }
         }
         
         #jr-seerr-detail-page { display: none; }
@@ -187,9 +192,6 @@
         body.jr-monitoring-active .pageContainer > div:not(#jr-monitoring-panel),
         body.jr-monitoring-active .sections,
         body.jr-monitoring-active #slides-container { display: none !important; }
-        @media (max-width: 800px) {
-            body.jr-monitoring-active #jr-monitoring-panel { padding-top: 7em; }
-        }
         .jr-cal-header { display: flex; align-items: center; justify-content: space-between; padding: 2em 1.5em 1em; gap: 1em; }
         .jr-cal-title { font-size: 1.6em; font-weight: 500; margin: 0; }
         .jr-cal-nav { display: inline-flex; align-items: center; gap: 0.5em; }

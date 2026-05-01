@@ -206,6 +206,22 @@
         .jr-cal-release { font-size: 0.8em; line-height: 1.25; padding: 3px 6px; background-color: rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
         .jr-cal-release:hover { background-color: rgba(255,255,255,0.18); }
         .jr-cal-empty { padding: 3em; text-align: center; opacity: 0.6; }
+        @media (max-width: 720px) {
+            .jr-cal-header { flex-direction: column; align-items: flex-start; gap: 0.75em; padding: 1.25em 1em 0.75em; }
+            .jr-cal-title { font-size: 1.3em; }
+            .jr-cal-nav { width: 100%; justify-content: space-between; }
+            .jr-cal-range { min-width: 0; flex: 1; font-size: 0.95em; }
+            .jr-cal-list { padding: 0 1em 2em; display: flex; flex-direction: column; gap: 1.25em; }
+            .jr-cal-week { display: flex; flex-direction: column; gap: 0.5em; }
+            .jr-cal-week-label { font-size: 0.85em; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.05em; padding: 0 0.25em; }
+            .jr-cal-day { background-color: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.6em 0.75em; display: flex; flex-direction: column; gap: 0.4em; }
+            .jr-cal-day.is-today { background-color: rgba(34,197,94,0.18); outline: 1px solid rgba(34,197,94,0.6); }
+            .jr-cal-day.is-past { opacity: 0.55; }
+            .jr-cal-day-head { font-size: 0.9em; font-weight: 500; opacity: 0.85; }
+            .jr-cal-release-row { font-size: 0.95em; padding: 0.5em 0.75em; background-color: rgba(255,255,255,0.08); border-radius: 6px; cursor: pointer; min-height: 36px; display: flex; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .jr-cal-release-row:hover, .jr-cal-release-row:active { background-color: rgba(255,255,255,0.18); }
+            .jr-cal-day-empty { font-size: 0.85em; opacity: 0.5; padding: 0.5em 0.25em; font-style: italic; }
+        }
     `;
     document.head.appendChild(style);
 
@@ -272,6 +288,23 @@
     const SVG_CHEVRON_RIGHT = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/></svg>';
 
     let _cal_offset_days = 0;
+    let _cal_resize_bound = false;
+    let _cal_resize_timer = null;
+
+    function _is_mobile_view() {
+        return window.matchMedia('(max-width: 720px)').matches;
+    }
+
+    function _bind_calendar_resize() {
+        if (_cal_resize_bound) return;
+        _cal_resize_bound = true;
+        window.addEventListener('resize', () => {
+            clearTimeout(_cal_resize_timer);
+            _cal_resize_timer = setTimeout(() => {
+                if (document.body.classList.contains('jr-monitoring-active')) _render_calendar_body();
+            }, 200);
+        });
+    }
 
     async function loadMonitoring() {
         const container = document.getElementById('jr-monitoring-panel');
@@ -290,6 +323,7 @@
         `;
         document.getElementById('jr-cal-prev').onclick = () => { _cal_offset_days -= 14; _render_calendar_body(); };
         document.getElementById('jr-cal-next').onclick = () => { _cal_offset_days += 14; _render_calendar_body(); };
+        _bind_calendar_resize();
         await _render_calendar_body();
     }
 
@@ -313,7 +347,7 @@
             const days = _compute_calendar_days(anchor);
             const items = _flatten_releases(monitorings);
             const by_day = _group_by_day(items);
-            body.innerHTML = _build_calendar_html(days, by_day);
+            body.innerHTML = _is_mobile_view() ? _build_calendar_list_html(days, by_day) : _build_calendar_html(days, by_day);
             _bind_calendar_clicks(body);
             const range_el = document.getElementById('jr-cal-range');
             if (range_el) range_el.textContent = _format_range(days);
@@ -341,8 +375,33 @@
         return `<div class="jr-cal-grid">${dow_html}${cells_html}</div>`;
     }
 
+    function _build_calendar_list_html(days, by_day) {
+        const today_iso = _iso_day(new Date());
+        const weeks = [];
+        for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+        return `<div class="jr-cal-list">${weeks.map(week => {
+            const week_label = `Sem. du ${week[0].getDate()} ${MONTH_LABELS[week[0].getMonth()]}`;
+            const days_with_releases = week.filter(d => (by_day.get(_iso_day(d)) || []).length > 0);
+            const inner = days_with_releases.length === 0
+                ? `<div class="jr-cal-day-empty">Aucune sortie cette semaine</div>`
+                : days_with_releases.map(d => {
+                    const iso = _iso_day(d);
+                    const releases = by_day.get(iso) || [];
+                    const is_today = iso === today_iso;
+                    const is_past = iso < today_iso;
+                    const cls = ['jr-cal-day', is_today ? 'is-today' : '', is_past ? 'is-past' : ''].filter(Boolean).join(' ');
+                    const head = `${DOW_LABELS[(d.getDay() + 6) % 7]} ${d.getDate()} ${MONTH_LABELS[d.getMonth()]}`;
+                    const rows = releases.map(r =>
+                        `<div class="jr-cal-release-row" data-tmdb-id="${UI.esc(r.tmdbId)}" data-media-type="${r.mediaType}" title="${UI.esc(r.label)}">${UI.esc(r.label)}</div>`
+                    ).join('');
+                    return `<div class="${cls}"><div class="jr-cal-day-head">${head}</div>${rows}</div>`;
+                }).join('');
+            return `<div class="jr-cal-week"><div class="jr-cal-week-label">${week_label}</div>${inner}</div>`;
+        }).join('')}</div>`;
+    }
+
     function _bind_calendar_clicks(body) {
-        body.querySelectorAll('.jr-cal-release').forEach(el => {
+        body.querySelectorAll('.jr-cal-release, .jr-cal-release-row').forEach(el => {
             el.onclick = () => {
                 const tmdbId = el.dataset.tmdbId;
                 const mediaType = el.dataset.mediaType === 'series' ? 'tv' : 'movie';

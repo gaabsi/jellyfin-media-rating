@@ -91,7 +91,7 @@
             body.jr-tab-active #jr-tab-panel,
             body.jr-monitoring-active #jr-monitoring-panel { padding-top: 5em; }
         }
-        @media (min-width: 721px) and (max-width: 1024px) {
+        @media (min-width: 721px) and (max-width: 1366px) {
             body.jr-tab-active #jr-tab-panel,
             body.jr-monitoring-active #jr-monitoring-panel { padding-top: 3em; }
         }

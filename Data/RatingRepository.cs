@@ -29,16 +29,16 @@ namespace Jellyfin.Plugin.Rating.Data
             using var con = new SqliteConnection(_connection_string);
             con.Open();
 
-            if (!_table_exists(con, "ratings"))
+            if (!SqliteHelpers.table_exists(con, "ratings"))
             {
                 _create_fresh_schema(con);
                 return;
             }
 
-            if (!_column_exists(con, "ratings", "in_library"))
+            if (!SqliteHelpers.column_exists(con, "ratings", "in_library"))
                 _migrate_v1_to_v2(con);
 
-            if (!_column_exists(con, "ratings", "media_type"))
+            if (!SqliteHelpers.column_exists(con, "ratings", "media_type"))
                 _add_media_type_column(con);
         }
 
@@ -47,23 +47,6 @@ namespace Jellyfin.Plugin.Rating.Data
             using var cmd = con.CreateCommand();
             cmd.CommandText = "ALTER TABLE ratings ADD COLUMN media_type TEXT;";
             cmd.ExecuteNonQuery();
-        }
-
-        private static bool _table_exists(SqliteConnection con, string name)
-        {
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = "SELECT 1 FROM sqlite_master WHERE type='table' AND name=$n LIMIT 1;";
-            cmd.Parameters.AddWithValue("$n", name);
-            return cmd.ExecuteScalar() != null;
-        }
-
-        private static bool _column_exists(SqliteConnection con, string table, string column)
-        {
-            using var cmd = con.CreateCommand();
-            cmd.CommandText = $"PRAGMA table_info({table});";
-            using var r = cmd.ExecuteReader();
-            while (r.Read()) if (r.GetString(1) == column) return true;
-            return false;
         }
 
         private static void _create_fresh_schema(SqliteConnection con)

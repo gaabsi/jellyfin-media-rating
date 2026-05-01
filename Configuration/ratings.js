@@ -235,6 +235,31 @@
             .jr-cal-expand-row.movie { --release-color: #a855f7; }
             .jr-cal-expand-row.series { --release-color: #3b82f6; }
         }
+
+        /* --- Modal sélection des saisons --- */
+        .jr-season-modal-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; padding: 1em; }
+        .jr-season-modal { background: #1c1c1c; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.6); width: 100%; max-width: 480px; max-height: 85vh; display: flex; flex-direction: column; color: var(--text-primary, #fff); }
+        .jr-season-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 1em 1.2em; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .jr-season-modal-header h3 { margin: 0; font-size: 1.05em; font-weight: 500; }
+        .jr-season-modal-close { background: transparent; border: none; color: inherit; font-size: 1.8em; line-height: 1; cursor: pointer; padding: 0 0.2em; opacity: 0.7; }
+        .jr-season-modal-close:hover { opacity: 1; }
+        .jr-season-modal-list { overflow-y: auto; padding: 0.4em 0; flex: 1 1 auto; }
+        .jr-season-row { display: flex; align-items: center; gap: 0.8em; padding: 0.6em 1.2em; cursor: pointer; transition: background 0.15s; }
+        .jr-season-row:hover:not(.is-locked) { background: rgba(255,255,255,0.06); }
+        .jr-season-row.is-locked { opacity: 0.5; cursor: not-allowed; }
+        .jr-season-row input[type=checkbox] { width: 18px; height: 18px; cursor: pointer; flex-shrink: 0; }
+        .jr-season-row.is-locked input[type=checkbox] { cursor: not-allowed; }
+        .jr-season-name { flex: 1 1 auto; font-size: 0.95em; }
+        .jr-season-meta { font-size: 0.8em; opacity: 0.65; }
+        .jr-season-modal-footer { display: flex; align-items: center; gap: 0.6em; padding: 0.9em 1.2em; border-top: 1px solid rgba(255,255,255,0.08); }
+        .jr-season-spacer { flex: 1 1 auto; }
+        .jr-season-modal-footer button { padding: 0.45rem 0.9rem; border-radius: 0.375rem; border: 1px solid transparent; font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; background: transparent; color: inherit; transition: background 0.15s, border-color 0.15s; }
+        .jr-season-toggle-all { border-color: rgba(255,255,255,0.2); }
+        .jr-season-toggle-all:hover { background: rgba(255,255,255,0.08); }
+        .jr-season-cancel:hover { background: rgba(255,255,255,0.08); }
+        .jr-season-confirm { background: rgba(79,70,229,0.85); border-color: #6366f1; color: #fff; }
+        .jr-season-confirm:hover:not(:disabled) { background: #4f46e5; }
+        .jr-season-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
     `;
     document.head.appendChild(style);
 
@@ -875,6 +900,92 @@
         return map;
     }
 
+    function _open_season_picker(d) {
+        return new Promise(resolve => {
+            const all_seasons   = (d.seasons || []).filter(s => s && s.seasonNumber > 0);
+            const media_seasons = (d.mediaInfo && d.mediaInfo.seasons) || [];
+            const status_of = (n) => {
+                const m = media_seasons.find(x => x.seasonNumber === n);
+                return m ? m.status : 1;
+            };
+            const is_locked = (st) => st === 2 || st === 3 || st === 4 || st === 5;
+            const label_status = (st) => {
+                if (st === 5) return 'Disponible';
+                if (st === 4) return 'Partielle';
+                if (st === 2 || st === 3) return 'En attente';
+                return '';
+            };
+
+            const overlay = document.createElement('div');
+            overlay.className = 'jr-season-modal-overlay';
+            overlay.innerHTML = `
+                <div class="jr-season-modal" role="dialog" aria-modal="true">
+                    <div class="jr-season-modal-header">
+                        <h3>Choisir les saisons à demander</h3>
+                        <button type="button" class="jr-season-modal-close" aria-label="Fermer">×</button>
+                    </div>
+                    <div class="jr-season-modal-list">
+                        ${all_seasons.map(s => {
+                            const st = status_of(s.seasonNumber);
+                            const locked = is_locked(st);
+                            const lbl = label_status(st);
+                            const year = s.airDate ? s.airDate.substring(0, 4) : '';
+                            const meta_parts = [`${s.episodeCount || 0} ép.`];
+                            if (year) meta_parts.push(year);
+                            if (lbl)  meta_parts.push(lbl);
+                            return `
+                            <label class="jr-season-row${locked ? ' is-locked' : ''}">
+                                <input type="checkbox" data-season="${s.seasonNumber}" ${locked ? 'disabled' : ''}/>
+                                <span class="jr-season-name">${UI.esc(s.name || ('Saison ' + s.seasonNumber))}</span>
+                                <span class="jr-season-meta">${meta_parts.join(' · ')}</span>
+                            </label>`;
+                        }).join('')}
+                    </div>
+                    <div class="jr-season-modal-footer">
+                        <button type="button" class="jr-season-toggle-all">Tout cocher</button>
+                        <div class="jr-season-spacer"></div>
+                        <button type="button" class="jr-season-cancel">Annuler</button>
+                        <button type="button" class="jr-season-confirm" disabled>Demander</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(overlay);
+
+            const cleanup = (val) => {
+                overlay.remove();
+                document.removeEventListener('keydown', on_key);
+                resolve(val);
+            };
+            const on_key = (e) => { if (e.key === 'Escape') cleanup(null); };
+            document.addEventListener('keydown', on_key);
+
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(null); });
+            overlay.querySelector('.jr-season-modal-close').onclick = () => cleanup(null);
+            overlay.querySelector('.jr-season-cancel').onclick      = () => cleanup(null);
+
+            const checkboxes  = Array.from(overlay.querySelectorAll('input[type=checkbox]:not(:disabled)'));
+            const confirm_btn = overlay.querySelector('.jr-season-confirm');
+            const toggle_btn  = overlay.querySelector('.jr-season-toggle-all');
+
+            const refresh_state = () => {
+                const checked = checkboxes.filter(c => c.checked);
+                confirm_btn.disabled = checked.length === 0;
+                const all_checked = checkboxes.length > 0 && checked.length === checkboxes.length;
+                toggle_btn.textContent = all_checked ? 'Tout décocher' : 'Tout cocher';
+            };
+            checkboxes.forEach(c => c.addEventListener('change', refresh_state));
+            toggle_btn.onclick = () => {
+                const all_checked = checkboxes.every(c => c.checked);
+                checkboxes.forEach(c => c.checked = !all_checked);
+                refresh_state();
+            };
+            confirm_btn.onclick = () => {
+                const seasons = checkboxes.filter(c => c.checked).map(c => parseInt(c.dataset.season, 10));
+                cleanup(seasons);
+            };
+            refresh_state();
+        });
+    }
+
     function _request_button_config(status) {
         if (status === 5) return null;
         if (status === 2 || status === 3 || status === 4) {
@@ -973,16 +1084,23 @@
         if (btn && !btn.disabled) {
             btn.onclick = async () => {
                 if (btn.dataset.busy === '1') return;
+                let seasons = null;
+                if (route.mediaType === 'tv') {
+                    seasons = await _open_season_picker(d);
+                    if (!seasons || seasons.length === 0) return;
+                }
                 btn.dataset.busy = '1';
                 const labelEl = btn.querySelector('.jr-btn-label');
                 if (labelEl) labelEl.textContent = 'Envoi...';
                 btn.disabled = true;
                 try {
-                    const res = await API.ajax('POST', 'api/MediaRating/SeerrRequest', {
+                    const payload = {
                         tmdbId: d.id,
                         mediaType: route.mediaType,
                         jellyfinUserId: ApiClient.getCurrentUserId()
-                    }, 'json');
+                    };
+                    if (seasons) payload.seasons = seasons;
+                    const res = await API.ajax('POST', 'api/MediaRating/SeerrRequest', payload, 'json');
                     if (res?.success) {
                         _apply_btn_config(btn, _request_button_config(2));
                     } else {

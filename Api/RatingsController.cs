@@ -36,6 +36,7 @@ namespace Jellyfin.Plugin.Rating.Api
         public int TmdbId { get; set; }
         public string MediaType { get; set; } = "movie";
         public string JellyfinUserId { get; set; } = "";
+        public int[]? Seasons { get; set; }
     }
 
     [ApiController]
@@ -204,9 +205,17 @@ namespace Jellyfin.Plugin.Rating.Api
             req.Headers.Add("X-Api-Key", api_key);
             req.Headers.Add("X-Api-User", seerr_user_id.ToString());
 
-            object payload = body.MediaType == "tv"
-                ? new { mediaType = body.MediaType, mediaId = body.TmdbId, seasons = "all" }
-                : new { mediaType = body.MediaType, mediaId = body.TmdbId };
+            object payload;
+            if (body.MediaType == "tv")
+            {
+                var clean_seasons = body.Seasons?.Where(s => s > 0).Distinct().ToArray() ?? Array.Empty<int>();
+                object seasons_value = clean_seasons.Length > 0 ? (object)clean_seasons : (object)"all";
+                payload = new { mediaType = body.MediaType, mediaId = body.TmdbId, seasons = seasons_value };
+            }
+            else
+            {
+                payload = new { mediaType = body.MediaType, mediaId = body.TmdbId };
+            }
             req.Content = new StringContent(JsonSerializer.Serialize(payload), System.Text.Encoding.UTF8, "application/json");
 
             try

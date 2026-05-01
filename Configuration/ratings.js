@@ -93,8 +93,7 @@
         }
         @media (min-width: 721px) and (max-width: 1366px) {
             body.jr-tab-active #jr-tab-panel,
-            body.jr-monitoring-active #jr-monitoring-panel { padding-top: 3em; }
-            body.jr-tab-active #jr-tab-panel { padding-top: 5em; }
+            body.jr-monitoring-active #jr-monitoring-panel { padding-top: 5em; }
         }
         
         #jr-seerr-detail-page { display: none; }

@@ -8,6 +8,14 @@
     "category": "General",
     "versions": [
       {
+        "version": "2.1.3.3",
+        "changelog": "Release v2.1.3.3",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/gaabsi/jellyfin-media-rating/releases/download/v2.1.3.3/media-rating_2.1.3.3.zip",
+        "checksum": "2cb190368637b021dcb0329fbdba77ff",
+        "timestamp": "2026-05-01T19:40:08.0000000Z"
+      },
+      {
         "version": "2.1.3.2",
         "changelog": "Release v2.1.3.2",
         "targetAbi": "10.11.0.0",

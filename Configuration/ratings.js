@@ -666,12 +666,105 @@
         } catch { return []; }
     }
 
+    // --- CACHE LÉGER POUR SKELETON DÉTAIL ---
+    const _SEARCH_CACHE_MAX = 50;
+    const _SKEL_LS_KEY      = 'jr:skel:v1';
+    const _SKEL_LS_MAX      = 200;
+    const _SKEL_TTL_MS      = 30 * 24 * 3600 * 1000;
+    const _search_cache     = new Map();
+    let   _skel_ls_obj      = null;
+    let   _skel_ls_flush    = null;
+
+    function _skel_ls_init() {
+        try {
+            const raw = localStorage.getItem(_SKEL_LS_KEY);
+            _skel_ls_obj = raw ? (JSON.parse(raw) || {}) : {};
+        } catch { _skel_ls_obj = {}; }
+        const now = Date.now();
+        let changed = false;
+        for (const key of Object.keys(_skel_ls_obj)) {
+            const e = _skel_ls_obj[key];
+            if (!e || !e.t || (now - e.t) > _SKEL_TTL_MS) {
+                delete _skel_ls_obj[key];
+                changed = true;
+                continue;
+            }
+            _search_cache.set(key, e.data);
+        }
+        if (changed) _skel_ls_schedule();
+    }
+
+    function _skel_ls_schedule() {
+        if (_skel_ls_flush) return;
+        _skel_ls_flush = setTimeout(() => {
+            _skel_ls_flush = null;
+            const keys = Object.keys(_skel_ls_obj);
+            if (keys.length > _SKEL_LS_MAX) {
+                keys.sort((a, b) => (_skel_ls_obj[a].t || 0) - (_skel_ls_obj[b].t || 0));
+                for (let i = 0; i < keys.length - _SKEL_LS_MAX; i++) delete _skel_ls_obj[keys[i]];
+            }
+            try { localStorage.setItem(_SKEL_LS_KEY, JSON.stringify(_skel_ls_obj)); }
+            catch { /* quota dépassé ou storage off — silent */ }
+        }, 250);
+    }
+
+    function _search_cache_get(key) {
+        if (!_search_cache.has(key)) return null;
+        const val = _search_cache.get(key);
+        _search_cache.delete(key);
+        _search_cache.set(key, val);
+        return val;
+    }
+
+    function _search_cache_set(key, val) {
+        if (_search_cache.has(key)) _search_cache.delete(key);
+        _search_cache.set(key, val);
+        if (_search_cache.size > _SEARCH_CACHE_MAX) {
+            _search_cache.delete(_search_cache.keys().next().value);
+        }
+        if (_skel_ls_obj) {
+            _skel_ls_obj[key] = { data: val, t: Date.now() };
+            _skel_ls_schedule();
+        }
+    }
+
+    _skel_ls_init();
+
     async function _search_seerr(query) {
         try {
             const data = await API.get(`api/MediaRating/SeerrSearch?query=${encodeURIComponent(query)}`);
             if (!data.success) return [];
-            return (data.results || []).map(r => ({ ...r, source: 'seerr' }));
+            const results = (data.results || []).map(r => {
+                const enriched = { ...r, source: 'seerr' };
+                if (r.id && r.media_type) {
+                    _search_cache_set(`${r.media_type}:${r.id}`, {
+                        poster_url:        r.poster_url ?? null,
+                        backdrop_url:      r.backdrop_url ?? null,
+                        title:             r.title ?? '',
+                        year:              r.year ?? '',
+                        release_date:      r.release_date ?? '',
+                        overview:          r.overview ?? '',
+                        original_language: r.original_language ?? '',
+                        media_status:      r.media_status ?? null,
+                        media_type:        r.media_type
+                    });
+                }
+                return enriched;
+            });
+            _warm_top_backdrops(results, 3);
+            return results;
         } catch { return []; }
+    }
+
+    function _warm_top_backdrops(results, n) {
+        const conn = navigator.connection;
+        if (conn && (conn.saveData || conn.effectiveType === '2g' || conn.effectiveType === 'slow-2g')) return;
+        for (const r of results.slice(0, n)) {
+            if (r.backdrop_url) {
+                const img = new Image();
+                img.src = r.backdrop_url;
+            }
+        }
     }
 
     function _build_unified_card_html(r) {
@@ -745,7 +838,17 @@
         }
         const seq = ++_detail_seq;
         document.body.classList.add('jr-detail-active');
-        panel.innerHTML = `<div class=\"jr-detail-status\">Chargement...</div>`;
+        const cached = _search_cache_get(`${route.mediaType}:${route.id}`);
+        if (cached) {
+            panel.innerHTML = _build_skeleton_html(cached);
+            if (cached.title) {
+                document.title = cached.title;
+                const _h3 = document.querySelector('h3.pageTitle');
+                if (_h3) _h3.textContent = cached.title;
+            }
+        } else {
+            panel.innerHTML = `<div class=\"jr-detail-status\">Chargement...</div>`;
+        }
         try {
             const [res, imgs] = await Promise.all([
                 API.get(`api/MediaRating/SeerrDetails?id=${route.id}&mediaType=${route.mediaType}`),
@@ -1002,6 +1105,47 @@
         if (icon) icon.innerHTML = cfg.svg;
         btn.className = `jr-btn-request jr-btn-variant-${cfg.variant}`;
         btn.disabled = !!cfg.disabled;
+    }
+
+    function _build_skeleton_html(c) {
+        const title    = c.title || '';
+        const backdrop = c.backdrop_url
+            ? `<div class=\"jr-backdrop-fixed\" style=\"background-image:url('${c.backdrop_url}')\"></div>`
+            : '';
+        const overview = c.overview
+            ? `<div class=\"overview detail-clamp-text\">${UI.esc(c.overview)}</div>`
+            : '';
+        const date_line = c.release_date
+            ? `<div class=\"detailsGroupItem\"><label>${UI.getSvg(CAL_PATH)}Date de sortie</label><span>${UI.esc(_format_date(c.release_date))}</span></div>`
+            : '';
+        const lang = _format_lang(c.original_language);
+        const lang_line = lang
+            ? `<div class=\"detailsGroupItem\"><label>${UI.getSvg(AUDIO_PATH)}Langue originale</label><span>${UI.esc(lang)}</span></div>`
+            : '';
+        const right_panel = (date_line || lang_line)
+            ? `<div class=\"itemDetailsGroup jr-info-panel\">${date_line}${lang_line}</div>`
+            : '';
+        const btn = (typeof c.media_status === 'number') ? _request_button_config(c.media_status) : null;
+        const btn_html = btn
+            ? `<button type=\"button\" class=\"jr-btn-request jr-btn-variant-${btn.variant}\" disabled>
+                    <span class=\"jr-btn-icon\" aria-hidden=\"true\">${btn.svg}</span>
+                    <span class=\"jr-btn-label\">${btn.label}</span>
+                </button>`
+            : '';
+        return `
+        ${backdrop}
+        <div class=\"detailPageWrapperContainer padded-bottom-page\">
+            <div class=\"jr-hero\">
+                <h1 class=\"itemName infoText parentNameLast\" style=\"margin:0;font-size:2.4em;font-weight:400\">${UI.esc(title)}</h1>
+                <div class=\"jr-btn-row\">${btn_html}</div>
+            </div>
+            <div class=\"detailPagePrimaryContent padded-left padded-right\">
+                <div class=\"detailSection detailSectionContent\">
+                    ${overview}
+                    ${right_panel ? `<div class=\"jr-info-panels\">${right_panel}</div>` : ''}
+                </div>
+            </div>
+        </div>`;
     }
 
     function _build_detail_html(d, mediaType, logos) {

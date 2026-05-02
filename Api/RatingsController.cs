@@ -139,13 +139,32 @@ namespace Jellyfin.Plugin.Rating.Api
                     var poster_path = item.TryGetProperty("posterPath", out var pp) ? pp.GetString() : null;
                     var poster_url  = string.IsNullOrEmpty(poster_path) ? null : $"https://image.tmdb.org/t/p/w500{poster_path}";
 
+                    var backdrop_path = item.TryGetProperty("backdropPath", out var bp) ? bp.GetString() : null;
+                    var backdrop_url  = string.IsNullOrEmpty(backdrop_path) ? null : $"https://image.tmdb.org/t/p/w780{backdrop_path}";
+
+                    var overview  = item.TryGetProperty("overview", out var ov) ? ov.GetString() : null;
+                    var orig_lang = item.TryGetProperty("originalLanguage", out var ol) ? ol.GetString() : null;
+
+                    int? media_status = null;
+                    if (item.TryGetProperty("mediaInfo", out var mi)
+                        && mi.ValueKind == JsonValueKind.Object
+                        && mi.TryGetProperty("status", out var st)
+                        && st.ValueKind == JsonValueKind.Number) {
+                        media_status = st.GetInt32();
+                    }
+
                     results.Add(new
                     {
-                        id         = item.TryGetProperty("id", out var id) ? id.GetInt32() : 0,
+                        id           = item.TryGetProperty("id", out var id) ? id.GetInt32() : 0,
                         media_type,
                         title,
-                        year       = (date != null && date.Length >= 4) ? date.Substring(0, 4) : null,
-                        poster_url
+                        year         = (date != null && date.Length >= 4) ? date.Substring(0, 4) : null,
+                        release_date = date,
+                        poster_url,
+                        backdrop_url,
+                        overview,
+                        original_language = orig_lang,
+                        media_status
                     });
                 }
             }
